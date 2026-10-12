@@ -626,7 +626,8 @@ app.delete('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
   const status = getStatus()
-  const chapterNum = parseInt(req.params.chapterNumber, 10)
+  const chMatch = req.params.chapterNumber.match(/(\d+)/)
+  const chapterNum = chMatch ? parseInt(chMatch[1], 10) : parseInt(req.params.chapterNumber, 10)
 
   if (status.isMysqlConnected) {
     try {

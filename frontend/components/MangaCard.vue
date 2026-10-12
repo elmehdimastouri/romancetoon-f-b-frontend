@@ -35,7 +35,7 @@
       <!-- Quick read button on cover hover -->
       <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-night-950/40 backdrop-blur-[2px]">
         <NuxtLink 
-          :to="`/manga/${manga.id}/chapter/1`"
+          :to="`/webtoon/${manga.slug || manga.id}/chapter-1`"
           class="px-4 py-2 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all transform scale-95 group-hover:scale-100"
         >
           <BookOpen class="w-3.5 h-3.5" />
@@ -53,20 +53,20 @@
     <!-- Details block -->
     <div class="p-3.5 flex flex-col flex-1 justify-between gap-2.5">
       <div>
-        <NuxtLink :to="`/manga/${manga.id}`" class="block">
+        <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="block">
           <h3 class="font-serif font-bold text-sm sm:text-base text-night-100 group-hover:text-romance-400 transition-colors line-clamp-1">
             {{ manga.title }}
           </h3>
         </NuxtLink>
         <p class="text-[11px] text-night-400 line-clamp-1 mt-0.5">
-          {{ manga.genres.slice(0, 2).join(' • ') }}
+          {{ manga.genres && manga.genres.slice(0, 2).join(' • ') }}
         </p>
       </div>
 
       <!-- Latest chapter link -->
       <div v-if="latestChapter" class="pt-2 border-t border-night-800/60 flex items-center justify-between text-xs">
         <NuxtLink 
-          :to="`/manga/${manga.id}/chapter/${latestChapter.id}`"
+          :to="`/webtoon/${manga.slug || manga.id}/chapter-${latestChapter.number}`"
           class="text-night-300 hover:text-romance-300 transition-colors font-medium flex items-center space-x-1 truncate"
         >
           <span class="truncate">Ch. {{ latestChapter.number }}</span>

@@ -18,15 +18,15 @@
     >
       <div class="flex items-center space-x-3">
         <NuxtLink 
-          :to="`/manga/${manga.id}`" 
+          :to="`/webtoon/${manga.slug || manga.id}`" 
           class="p-2 rounded-xl bg-night-850 hover:bg-night-800 text-night-300 hover:text-white transition-colors"
-          title="Back to Manga details"
+          title="Back to Webtoon details"
         >
           <ArrowLeft class="w-5 h-5" />
         </NuxtLink>
 
         <div>
-          <NuxtLink :to="`/manga/${manga.id}`" class="text-xs text-night-400 hover:text-romance-400 truncate max-w-[200px] sm:max-w-md block">
+          <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="text-xs text-night-400 hover:text-romance-400 truncate max-w-[200px] sm:max-w-md block">
             {{ manga.title }}
           </NuxtLink>
           <h2 class="text-sm sm:text-base font-semibold text-white truncate max-w-[220px] sm:max-w-md">
@@ -149,7 +149,7 @@
       <!-- Prev Chapter Button -->
       <NuxtLink 
         v-if="prevChapter"
-        :to="`/manga/${manga.id}/chapter/${prevChapter.id}`"
+        :to="`/webtoon/${manga.slug || manga.id}/chapter-${prevChapter.number}`"
         class="px-4 py-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white text-xs font-medium flex items-center space-x-1.5 transition-colors"
       >
         <ChevronLeft class="w-4 h-4" />
@@ -175,7 +175,7 @@
       <!-- Next Chapter Button -->
       <NuxtLink 
         v-if="nextChapter"
-        :to="`/manga/${manga.id}/chapter/${nextChapter.id}`"
+        :to="`/webtoon/${manga.slug || manga.id}/chapter-${nextChapter.number}`"
         class="px-4 py-2 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-medium shadow-glow-pink flex items-center space-x-1.5 transition-colors"
       >
         <span class="hidden sm:inline">Ch. {{ nextChapter.number }}</span>
@@ -204,12 +204,12 @@
         <div class="overflow-y-auto space-y-2 pr-1 custom-scroll">
           <NuxtLink 
             v-for="ch in manga.chapters" 
-            :key="ch.id"
-            :to="`/manga/${manga.id}/chapter/${ch.id}`"
+            :key="ch.number"
+            :to="`/webtoon/${manga.slug || manga.id}/chapter-${ch.number}`"
             @click="showChapterMenu = false"
             :class="[
               'p-3 rounded-xl border flex items-center justify-between text-xs transition-colors',
-              ch.id === currentChapter.id 
+              ch.number === currentChapter.number 
                 ? 'bg-romance-600/20 border-romance-500 text-white font-bold' 
                 : 'bg-night-900 border-night-800 text-night-300 hover:bg-night-850 hover:text-white'
             ]"

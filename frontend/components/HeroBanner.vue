@@ -53,7 +53,7 @@
         <!-- Action buttons -->
         <div class="flex flex-wrap items-center gap-3 pt-2">
           <NuxtLink 
-            :to="`/manga/${featured.id}/chapter/1`"
+            :to="`/webtoon/${featured.slug || featured.id}/chapter-1`"
             class="px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-sm shadow-glow-pink flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
           >
             <BookOpen class="w-4 h-4" />
@@ -61,7 +61,7 @@
           </NuxtLink>
 
           <NuxtLink 
-            :to="`/manga/${featured.id}`"
+            :to="`/webtoon/${featured.slug || featured.id}`"
             class="px-5 py-3 rounded-xl bg-night-900/90 hover:bg-night-800 text-night-100 border border-night-700 font-medium text-sm flex items-center space-x-2 transition-colors"
           >
             <Info class="w-4 h-4 text-romance-400" />
