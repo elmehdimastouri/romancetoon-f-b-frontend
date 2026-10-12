@@ -377,7 +377,10 @@ app.post('/api/r2/scan-manga', async (req, res) => {
   }
 
   const r2Bucket = process.env.R2_BUCKET_NAME || 'romancetoon-chapters'
-  const cdnDomain = process.env.R2_PUBLIC_DOMAIN || 'https://cdn.romancetoon.com'
+  let cdnDomain = process.env.R2_PUBLIC_DOMAIN || 'https://cdn.romancetoon.com'
+  if (!cdnDomain.startsWith('http://') && !cdnDomain.startsWith('https://')) {
+    cdnDomain = `https://${cdnDomain}`
+  }
 
   try {
     // Try multiple prefix possibilities (e.g. "manga_xxx/", "data/manga_xxx/", or raw "manga_xxx")
@@ -632,12 +635,18 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
   if (status.isMysqlConnected) {
     try {
       const pool = getPool()
-      const [mRows] = await pool.query('SELECT id, title, slug FROM mangas WHERE id = ? OR slug = ?', [req.params.id, req.params.id])
+      const [mRows] = await pool.query('SELECT id, title, slug, r2_folder_id FROM mangas WHERE id = ? OR slug = ? OR r2_folder_id = ?', [req.params.id, req.params.id, req.params.id])
       if (mRows.length > 0) {
         const manga = mRows[0]
         const [cRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? AND chapter_number = ?', [manga.id, chapterNum])
         if (cRows.length > 0) {
           const c = cRows[0]
+          const rawPages = c.pages_json ? JSON.parse(c.pages_json) : []
+          const cleanPages = rawPages.map((p, idx) => ({
+            page: p.page || idx + 1,
+            url: (p.url.startsWith('http://') || p.url.startsWith('https://')) ? p.url : `https://${p.url.replace(/^\/+/, '')}`
+          }))
+
           return res.json({
             success: true,
             manga,
@@ -650,7 +659,7 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
               pagesCount: c.pages_count,
               isPublished: Boolean(c.is_published),
               status: c.status,
-              pages: c.pages_json ? JSON.parse(c.pages_json) : []
+              pages: cleanPages
             }
           })
         }

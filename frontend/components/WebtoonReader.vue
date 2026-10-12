@@ -251,15 +251,15 @@ let lastScrollY = 0
 // Current chapter pages
 const pages = computed<ChapterPage[]>(() => {
   if (props.currentChapter.pages && props.currentChapter.pages.length > 0) {
-    return props.currentChapter.pages
+    return props.currentChapter.pages.map((p, idx) => ({
+      ...p,
+      page: p.page || idx + 1,
+      url: (p.url && (p.url.startsWith('http://') || p.url.startsWith('https://'))) 
+        ? p.url 
+        : `https://${(p.url || '').replace(/^\/+/, '')}`
+    }))
   }
-  // Generate sample pages if not explicitly populated
-  return [
-    { page: 1, url: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=900&q=85' },
-    { page: 2, url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=900&q=85' },
-    { page: 3, url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=85' },
-    { page: 4, url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85' }
-  ]
+  return []
 })
 
 // Previous & Next chapters
