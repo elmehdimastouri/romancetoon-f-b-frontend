@@ -96,6 +96,51 @@ app.get('/api/db-check', async (req, res) => {
   })
 })
 
+// Endpoint to diagnose and test Cloudflare R2 connection
+app.get('/api/r2-check', async (req, res) => {
+  const s3 = getR2Client()
+  const r2Bucket = process.env.R2_BUCKET_NAME || 'romancetoon-chapters'
+  const r2Account = process.env.R2_ACCOUNT_ID
+  const hasAccessKey = Boolean(process.env.R2_ACCESS_KEY_ID)
+  const hasSecretKey = Boolean(process.env.R2_SECRET_ACCESS_KEY)
+
+  if (!s3) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cloudflare R2 keys missing in Hostinger Environment Variables!',
+      diagnostics: {
+        has_account_id: Boolean(r2Account),
+        has_access_key: hasAccessKey,
+        has_secret_key: hasSecretKey,
+        bucket_name: r2Bucket
+      }
+    })
+  }
+
+  try {
+    const command = new ListObjectsV2Command({
+      Bucket: r2Bucket,
+      MaxKeys: 15
+    })
+    const response = await s3.send(command)
+    const sampleKeys = (response.Contents || []).map(o => o.Key)
+
+    res.json({
+      success: true,
+      message: 'Cloudflare R2 is CONNECTED and responding!',
+      bucket: r2Bucket,
+      total_sample_files_found: sampleKeys.length,
+      sample_keys: sampleKeys
+    })
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: `Failed to connect to R2 bucket "${r2Bucket}": ${err.message}`,
+      hint: 'Please check your R2 Token permissions (must be Object Read & Write) and correct Bucket Name.'
+    })
+  }
+})
+
 // ---------------------------------------------------------------------------
 // 2. Manga CRUD Endpoints
 // ---------------------------------------------------------------------------
@@ -327,7 +372,7 @@ app.post('/api/r2/scan-manga', async (req, res) => {
   if (!s3) {
     return res.status(400).json({
       success: false,
-      message: 'Cloudflare R2 credentials (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) not set in .env'
+      message: 'Cloudflare R2 credentials (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) are missing in Hostinger environment variables (.env)'
     })
   }
 
@@ -335,14 +380,37 @@ app.post('/api/r2/scan-manga', async (req, res) => {
   const cdnDomain = process.env.R2_PUBLIC_DOMAIN || 'https://cdn.romancetoon.com'
 
   try {
-    const cleanPrefix = mangaFolder.endsWith('/') ? mangaFolder : `${mangaFolder}/`
-    const command = new ListObjectsV2Command({
-      Bucket: r2Bucket,
-      Prefix: cleanPrefix
-    })
+    // Try multiple prefix possibilities (e.g. "manga_xxx/", "data/manga_xxx/", or raw "manga_xxx")
+    const cleanId = mangaFolder.replace(/^\/+|\/+$/g, '')
+    const prefixesToTry = [
+      `${cleanId}/`,
+      `data/${cleanId}/`,
+      cleanId
+    ]
 
-    const response = await s3.send(command)
-    const objects = response.Contents || []
+    let objects = []
+    let matchedPrefix = ''
+
+    for (const prefix of prefixesToTry) {
+      const command = new ListObjectsV2Command({
+        Bucket: r2Bucket,
+        Prefix: prefix,
+        MaxKeys: 1000
+      })
+      const response = await s3.send(command)
+      if (response.Contents && response.Contents.length > 0) {
+        objects = response.Contents
+        matchedPrefix = prefix
+        break
+      }
+    }
+
+    if (objects.length === 0) {
+      return res.json({
+        success: false,
+        message: `No files found in R2 bucket "${r2Bucket}" under prefix "${cleanId}/" or "data/${cleanId}/". Please check your bucket name or folder structure in R2.`
+      })
+    }
 
     const validExtensions = new Set(['.webp', '.png', '.jpg', '.jpeg'])
     
@@ -356,7 +424,7 @@ app.post('/api/r2/scan-manga', async (req, res) => {
       if (!validExtensions.has(ext)) continue
 
       // Remove prefix to get relative path: "1/001.webp" or "chapter-2/01.png"
-      const relative = key.slice(cleanPrefix.length)
+      const relative = key.slice(matchedPrefix.length)
       const parts = relative.split('/')
 
       if (parts.length >= 2) {
