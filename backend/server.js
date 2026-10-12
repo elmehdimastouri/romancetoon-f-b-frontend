@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { loadData, saveData } from './database.js'
+import { initMySQL, getPool, getStatus } from './mysql.js'
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
 dotenv.config()
@@ -12,6 +13,15 @@ const PORT = process.env.PORT || 5000
 // Middleware
 app.use(cors({ origin: '*' }))
 app.use(express.json())
+
+// Initialize MySQL
+initMySQL().then(connected => {
+  if (connected) {
+    console.log('[✔] RomanceToon is now using Hostinger MySQL Database.')
+  } else {
+    console.log('[i] RomanceToon is using fallback persistent JSON database.')
+  }
+})
 
 // Smart natural sorting helper
 function smartPageCompare(a, b) {
@@ -28,11 +38,18 @@ function smartPageCompare(a, b) {
 // 1. Health check & Root info
 // ---------------------------------------------------------------------------
 app.get('/', (req, res) => {
+  const dbStatus = getStatus()
   res.json({
     status: 'online',
     app: 'RomanceToon Backend API',
     version: '1.0.0',
+    database: {
+      type: dbStatus.isMysqlConnected ? 'MySQL (Hostinger)' : 'Persistent JSON',
+      connected: dbStatus.isMysqlConnected,
+      name: dbStatus.config.database
+    },
     documentation: {
+      db_check: 'GET /api/db-check',
       mangas: 'GET /api/mangas',
       manga_detail: 'GET /api/mangas/:id',
       chapter_detail: 'GET /api/mangas/:id/chapters/:chapterNumber',
@@ -43,12 +60,57 @@ app.get('/', (req, res) => {
   })
 })
 
+// Endpoint to verify Database connection status
+app.get('/api/db-check', async (req, res) => {
+  const status = getStatus()
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [rows] = await pool.query('SELECT DATABASE() as db, NOW() as server_time')
+      return res.json({
+        success: true,
+        message: 'MySQL is CONNECTED and active on Hostinger!',
+        database_name: rows[0].db,
+        server_time: rows[0].server_time,
+        status
+      })
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message, status })
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Backend is active using persistent local engine (MySQL credentials available in mysql.js)',
+    status
+  })
+})
+
 // ---------------------------------------------------------------------------
 // 2. Manga Endpoints
 // ---------------------------------------------------------------------------
 
 // Get all mangas (with optional search and genre filter)
-app.get('/api/mangas', (req, res) => {
+app.get('/api/mangas', async (req, res) => {
+  const status = getStatus()
+
+  // If MySQL is active
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [rows] = await pool.query('SELECT * FROM mangas ORDER BY created_at DESC')
+      const mangas = rows.map(r => ({
+        ...r,
+        alternativeTitles: r.alternative_titles ? JSON.parse(r.alternative_titles) : [],
+        genres: r.genres ? JSON.parse(r.genres) : []
+      }))
+      return res.json({ success: true, count: mangas.length, data: mangas })
+    } catch (err) {
+      console.error('MySQL query error, fallback to memory:', err)
+    }
+  }
+
+  // Fallback engine
   const db = loadData()
   let list = db.mangas || []
 
@@ -72,7 +134,34 @@ app.get('/api/mangas', (req, res) => {
 })
 
 // Get single manga by ID or Slug
-app.get('/api/mangas/:id', (req, res) => {
+app.get('/api/mangas/:id', async (req, res) => {
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [rows] = await pool.query('SELECT * FROM mangas WHERE id = ? OR slug = ?', [req.params.id, req.params.id])
+      if (rows.length > 0) {
+        const manga = rows[0]
+        const [chapRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? ORDER BY chapter_number ASC', [manga.id])
+        manga.alternativeTitles = manga.alternative_titles ? JSON.parse(manga.alternative_titles) : []
+        manga.genres = manga.genres ? JSON.parse(manga.genres) : []
+        manga.chapters = chapRows.map(c => ({
+          id: c.chapter_number.toString(),
+          number: c.chapter_number,
+          title: c.title,
+          releaseDate: c.release_date,
+          views: c.views,
+          pagesCount: c.pages_count,
+          pages: c.pages_json ? JSON.parse(c.pages_json) : []
+        }))
+        return res.json({ success: true, data: manga })
+      }
+    } catch (err) {
+      console.error('MySQL query error:', err)
+    }
+  }
+
   const db = loadData()
   const manga = (db.mangas || []).find(m => m.id === req.params.id || m.slug === req.params.id)
 
@@ -87,24 +176,45 @@ app.get('/api/mangas/:id', (req, res) => {
 })
 
 // Create new manga
-app.post('/api/mangas', (req, res) => {
-  const { title, cover, banner, synopsis, author, artist, genres, badge } = req.body
+app.post('/api/mangas', async (req, res) => {
+  const { title, cover, banner, synopsis, author, artist, genres, badge, alternativeTitles } = req.body
 
   if (!title) {
     return res.status(400).json({ success: false, message: 'Title is required' })
   }
 
+  const id = `manga_${Date.now().toString(16)}`
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const altList = alternativeTitles ? (Array.isArray(alternativeTitles) ? alternativeTitles : alternativeTitles.split(',').map(s => s.trim())) : []
+  const genreList = genres || ['Romance']
+
+  const status = getStatus()
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      await pool.query(
+        `INSERT INTO mangas (id, slug, title, alternative_titles, cover, banner, synopsis, author, artist, genres, badge)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, slug, title, JSON.stringify(altList), cover || '', banner || cover || '', synopsis || '', author || 'Unknown', artist || 'Unknown', JSON.stringify(genreList), badge || 'NEW']
+      )
+    } catch (err) {
+      console.error('MySQL insert error:', err)
+    }
+  }
+
+  // Also persist in local engine
   const db = loadData()
   const newManga = {
-    id: `manga_${Date.now().toString(16)}`,
-    slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+    id,
+    slug,
     title,
+    alternativeTitles: altList,
     cover: cover || '',
     banner: banner || cover || '',
     synopsis: synopsis || '',
     author: author || 'Unknown',
     artist: artist || 'Unknown',
-    genres: genres || ['Romance'],
+    genres: genreList,
     rating: 5.0,
     ratingCount: '1',
     status: 'Ongoing',
@@ -125,45 +235,44 @@ app.post('/api/mangas', (req, res) => {
   })
 })
 
-// Update manga
-app.put('/api/mangas/:id', (req, res) => {
-  const db = loadData()
-  const index = (db.mangas || []).findIndex(m => m.id === req.params.id)
-
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: 'Manga not found' })
-  }
-
-  db.mangas[index] = { ...db.mangas[index], ...req.body, updatedAt: new Date().toISOString() }
-  saveData(db)
-
-  res.json({
-    success: true,
-    message: 'Manga updated successfully',
-    data: db.mangas[index]
-  })
-})
-
-// Delete manga
-app.delete('/api/mangas/:id', (req, res) => {
-  const db = loadData()
-  const initialLength = db.mangas.length
-  db.mangas = db.mangas.filter(m => m.id !== req.params.id)
-
-  if (db.mangas.length === initialLength) {
-    return res.status(404).json({ success: false, message: 'Manga not found' })
-  }
-
-  saveData(db)
-  res.json({ success: true, message: 'Manga deleted successfully' })
-})
-
 // ---------------------------------------------------------------------------
 // 3. Chapter Endpoints (Webtoon Reader Data)
 // ---------------------------------------------------------------------------
 
 // Get single chapter details and pages
-app.get('/api/mangas/:id/chapters/:chapterNumber', (req, res) => {
+app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
+  const status = getStatus()
+  const chapterNum = parseInt(req.params.chapterNumber, 10)
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [mRows] = await pool.query('SELECT id, title, slug FROM mangas WHERE id = ? OR slug = ?', [req.params.id, req.params.id])
+      if (mRows.length > 0) {
+        const manga = mRows[0]
+        const [cRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? AND chapter_number = ?', [manga.id, chapterNum])
+        if (cRows.length > 0) {
+          const c = cRows[0]
+          return res.json({
+            success: true,
+            manga,
+            chapter: {
+              id: c.chapter_number.toString(),
+              number: c.chapter_number,
+              title: c.title,
+              releaseDate: c.release_date,
+              views: c.views,
+              pagesCount: c.pages_count,
+              pages: c.pages_json ? JSON.parse(c.pages_json) : []
+            }
+          })
+        }
+      }
+    } catch (err) {
+      console.error('MySQL chapter query error:', err)
+    }
+  }
+
   const db = loadData()
   const manga = (db.mangas || []).find(m => m.id === req.params.id || m.slug === req.params.id)
 
@@ -171,8 +280,7 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', (req, res) => {
     return res.status(404).json({ success: false, message: 'Manga not found' })
   }
 
-  const chapterNum = req.params.chapterNumber
-  const chapter = (manga.chapters || []).find(c => c.id === chapterNum || c.number.toString() === chapterNum)
+  const chapter = (manga.chapters || []).find(c => c.number === chapterNum || c.id === req.params.chapterNumber)
 
   if (!chapter) {
     return res.status(404).json({ success: false, message: 'Chapter not found' })
@@ -185,8 +293,8 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', (req, res) => {
   })
 })
 
-// Add or update chapter (assign pages from R2 or array)
-app.post('/api/mangas/:id/chapters', (req, res) => {
+// Add or update chapter
+app.post('/api/mangas/:id/chapters', async (req, res) => {
   const { number, title, pages } = req.body
   const chapterNumber = parseInt(number, 10)
 
@@ -194,49 +302,54 @@ app.post('/api/mangas/:id/chapters', (req, res) => {
     return res.status(400).json({ success: false, message: 'Valid chapter number is required' })
   }
 
+  const status = getStatus()
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      await pool.query(
+        `INSERT INTO chapters (manga_id, chapter_number, title, release_date, pages_count, pages_json)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+         title = VALUES(title), pages_count = VALUES(pages_count), pages_json = VALUES(pages_json)`,
+        [req.params.id, chapterNumber, title || `Chapter ${chapterNumber}`, 'Just now', (pages && pages.length) || 0, JSON.stringify(pages || [])]
+      )
+    } catch (err) {
+      console.error('MySQL chapter insert error:', err)
+    }
+  }
+
+  // Also persist in local engine
   const db = loadData()
   const manga = (db.mangas || []).find(m => m.id === req.params.id)
-
-  if (!manga) {
-    return res.status(404).json({ success: false, message: 'Manga not found' })
+  if (manga) {
+    if (!manga.chapters) manga.chapters = []
+    const existingIndex = manga.chapters.findIndex(c => c.number === chapterNumber)
+    const chapterData = {
+      id: chapterNumber.toString(),
+      number: chapterNumber,
+      title: title || `Chapter ${chapterNumber}`,
+      releaseDate: 'Just now',
+      views: '1',
+      pagesCount: (pages && pages.length) || 0,
+      pages: pages || []
+    }
+    if (existingIndex >= 0) manga.chapters[existingIndex] = chapterData
+    else {
+      manga.chapters.push(chapterData)
+      manga.chapters.sort((a, b) => a.number - b.number)
+    }
+    saveData(db)
   }
-
-  if (!manga.chapters) manga.chapters = []
-
-  // Check if chapter already exists
-  const existingIndex = manga.chapters.findIndex(c => c.number === chapterNumber)
-
-  const chapterData = {
-    id: chapterNumber.toString(),
-    number: chapterNumber,
-    title: title || `Chapter ${chapterNumber}`,
-    releaseDate: 'Just now',
-    views: '1',
-    pagesCount: (pages && pages.length) || 0,
-    pages: pages || []
-  }
-
-  if (existingIndex >= 0) {
-    manga.chapters[existingIndex] = { ...manga.chapters[existingIndex], ...chapterData }
-  } else {
-    manga.chapters.push(chapterData)
-    // Sort chapters by number
-    manga.chapters.sort((a, b) => a.number - b.number)
-  }
-
-  saveData(db)
 
   res.status(201).json({
     success: true,
-    message: `Chapter ${chapterNumber} saved successfully`,
-    chapter: chapterData
+    message: `Chapter ${chapterNumber} saved successfully`
   })
 })
 
 // ---------------------------------------------------------------------------
-// 4. Cloudflare R2 Auto-Sync Endpoint (Optional Power Feature!)
+// 4. Cloudflare R2 Auto-Sync Endpoint
 // ---------------------------------------------------------------------------
-// You provide mangaId and chapterNumber, it queries R2 to fetch all image keys in that folder!
 app.post('/api/r2/sync-chapter', async (req, res) => {
   const { mangaId, chapterNumber } = req.body
 
@@ -290,12 +403,25 @@ app.post('/api/r2/sync-chapter', async (req, res) => {
       url: `${cdnDomain}/${key}`
     }))
 
-    // Save to Database
+    // Save to MySQL
+    const cNum = parseInt(chapterNumber, 10)
+    const status = getStatus()
+    if (status.isMysqlConnected) {
+      const pool = getPool()
+      await pool.query(
+        `INSERT INTO chapters (manga_id, chapter_number, title, release_date, pages_count, pages_json)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+         pages_count = VALUES(pages_count), pages_json = VALUES(pages_json)`,
+        [mangaId, cNum, `Chapter ${cNum}`, 'Just now', pages.length, JSON.stringify(pages)]
+      )
+    }
+
+    // Save to local engine
     const db = loadData()
     const manga = (db.mangas || []).find(m => m.id === mangaId)
     if (manga) {
       if (!manga.chapters) manga.chapters = []
-      const cNum = parseInt(chapterNumber, 10)
       const existingIdx = manga.chapters.findIndex(c => c.number === cNum)
       const chObj = {
         id: cNum.toString(),
@@ -329,4 +455,5 @@ app.post('/api/r2/sync-chapter', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`[✔] RomanceToon API Server running on port ${PORT}`)
   console.log(`[✔] Health check: http://localhost:${PORT}/`)
+  console.log(`[✔] Database check: http://localhost:${PORT}/api/db-check`)
 })
