@@ -184,6 +184,26 @@
       <div v-else class="w-20"></div>
     </footer>
 
+    <!-- Floating Scroll To Top Button -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-6 scale-90"
+      enter-to-class="opacity-100 translate-y-0 scale-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0 scale-100"
+      leave-to-class="opacity-0 translate-y-6 scale-90"
+    >
+      <button 
+        v-if="showScrollTop"
+        @click="scrollToTop"
+        class="fixed bottom-20 right-6 z-40 p-3.5 rounded-full bg-gradient-to-tr from-romance-600 to-blossom-500 text-white shadow-lg shadow-romance-500/25 hover:shadow-romance-500/40 hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 group backdrop-blur-md"
+        aria-label="Scroll to top"
+        title="الصعود للأعلى"
+      >
+        <ChevronUp class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+      </button>
+    </transition>
+
     <!-- Chapter Selector Modal / Drawer -->
     <div 
       v-if="showChapterMenu" 
@@ -292,8 +312,17 @@ const nextChapter = computed(() => {
   return null
 })
 
+const showScrollTop = ref(false)
+
 const toggleControls = () => {
   showControls.value = !showControls.value
+}
+
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
 }
 
 const handleScroll = () => {
@@ -303,6 +332,9 @@ const handleScroll = () => {
   if (maxScroll > 0) {
     scrollProgress.value = Math.min(100, Math.max(0, (currentScrollY / maxScroll) * 100))
   }
+
+  // Show floating "Scroll to top" button when user scrolls down 300px
+  showScrollTop.value = currentScrollY > 300
 
   // Auto hide controls when scrolling down fast, show when scrolling up
   if (currentScrollY > lastScrollY + 40 && currentScrollY > 100) {
