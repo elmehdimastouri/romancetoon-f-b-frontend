@@ -203,7 +203,7 @@
 
         <div class="overflow-y-auto space-y-2 pr-1 custom-scroll">
           <NuxtLink 
-            v-for="ch in manga.chapters" 
+            v-for="ch in mangaChapters" 
             :key="ch.number"
             :to="`/webtoon/${manga.slug || manga.id}/chapter-${ch.number}`"
             @click="showChapterMenu = false"
@@ -262,21 +262,32 @@ const pages = computed<ChapterPage[]>(() => {
   return []
 })
 
+// Safe list of manga chapters
+const mangaChapters = computed(() => {
+  return (props.manga && props.manga.chapters && props.manga.chapters.length > 0)
+    ? props.manga.chapters
+    : [props.currentChapter]
+})
+
 // Previous & Next chapters
 const currentIndex = computed(() => {
-  return props.manga.chapters.findIndex(c => c.id === props.currentChapter.id)
+  return mangaChapters.value.findIndex(c => 
+    c.number === props.currentChapter.number || 
+    c.id === props.currentChapter.id ||
+    c.id === props.currentChapter.number?.toString()
+  )
 })
 
 const prevChapter = computed(() => {
   if (currentIndex.value > 0) {
-    return props.manga.chapters[currentIndex.value - 1]
+    return mangaChapters.value[currentIndex.value - 1]
   }
   return null
 })
 
 const nextChapter = computed(() => {
-  if (currentIndex.value < props.manga.chapters.length - 1) {
-    return props.manga.chapters[currentIndex.value + 1]
+  if (currentIndex.value >= 0 && currentIndex.value < mangaChapters.value.length - 1) {
+    return mangaChapters.value[currentIndex.value + 1]
   }
   return null
 })

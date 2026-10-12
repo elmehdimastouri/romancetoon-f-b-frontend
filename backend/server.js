@@ -638,6 +638,12 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
       const [mRows] = await pool.query('SELECT id, title, slug, r2_folder_id FROM mangas WHERE id = ? OR slug = ? OR r2_folder_id = ?', [req.params.id, req.params.id, req.params.id])
       if (mRows.length > 0) {
         const manga = mRows[0]
+        const [allChapters] = await pool.query(
+          'SELECT chapter_number as number, title, release_date as releaseDate, is_published as isPublished FROM chapters WHERE manga_id = ? AND is_published = 1 ORDER BY chapter_number ASC',
+          [manga.id]
+        )
+        manga.chapters = allChapters
+
         const [cRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? AND chapter_number = ?', [manga.id, chapterNum])
         if (cRows.length > 0) {
           const c = cRows[0]
