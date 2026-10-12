@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-night-950 text-night-100 font-sans antialiased selection:bg-romance-500 selection:text-white;
+    min-height: 100vh;
+  }
+}
+
+/* Eye-comfort custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0c11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f2231;
+  border-radius: 9999px;
+  border: 2px solid #0b0c11;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e11d48;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(17, 19, 27, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-nav {
+  background: rgba(11, 12, 17, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Reader image container without awkward gaps */
+.webtoon-page {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  margin: 0;
+  padding: 0;
+}

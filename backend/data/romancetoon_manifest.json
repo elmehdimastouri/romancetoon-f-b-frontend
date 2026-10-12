@@ -1,0 +1,68 @@
+[
+  {
+    "manga_id": "manga_611ac7d4f93e7",
+    "chapters_count": 3,
+    "chapters": [
+      {
+        "chapter_number": "1",
+        "pages_count": 4,
+        "pages": [
+          {
+            "page": 1,
+            "original_name": "01.webp",
+            "standardized_name": "001.webp",
+            "r2_path": "manga_611ac7d4f93e7/1/001.webp",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/1/001.webp"
+          },
+          {
+            "page": 2,
+            "original_name": "image-02.png",
+            "standardized_name": "002.png",
+            "r2_path": "manga_611ac7d4f93e7/1/002.png",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/1/002.png"
+          },
+          {
+            "page": 3,
+            "original_name": "003.webp",
+            "standardized_name": "003.webp",
+            "r2_path": "manga_611ac7d4f93e7/1/003.webp",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/1/003.webp"
+          },
+          {
+            "page": 4,
+            "original_name": "10.webp",
+            "standardized_name": "004.webp",
+            "r2_path": "manga_611ac7d4f93e7/1/004.webp",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/1/004.webp"
+          }
+        ]
+      },
+      {
+        "chapter_number": "2",
+        "pages_count": 1,
+        "pages": [
+          {
+            "page": 1,
+            "original_name": "01.webp",
+            "standardized_name": "001.webp",
+            "r2_path": "manga_611ac7d4f93e7/2/001.webp",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/2/001.webp"
+          }
+        ]
+      },
+      {
+        "chapter_number": "10",
+        "pages_count": 1,
+        "pages": [
+          {
+            "page": 1,
+            "original_name": "01.webp",
+            "standardized_name": "001.webp",
+            "r2_path": "manga_611ac7d4f93e7/10/001.webp",
+            "url": "https://cdn.romancetoon.com/manga_611ac7d4f93e7/10/001.webp"
+          }
+        ]
+      }
+    ]
+  }
+]
