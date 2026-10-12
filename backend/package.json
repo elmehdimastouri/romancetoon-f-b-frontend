@@ -1,16 +1,17 @@
 {
   "name": "romancetoon-backend",
   "version": "1.0.0",
-  "description": "RomanceToon Backend & Cloudflare R2 Chapter Importer",
-  "main": "importer.js",
+  "description": "RomanceToon High-Performance Manga & Chapter API",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "import": "node importer.js",
-    "test-scan": "node importer.js --dry-run"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.7",
-    "image-size": "^1.2.0"
+    "express": "^4.22.3"
   }
 }
