@@ -14,14 +14,14 @@
             </h1>
           </div>
         </div>
-        <p class="text-xs text-night-400 mt-1">Management Portal &bull; Secret Route: <code class="text-romance-300 font-mono">/mastouri</code></p>
+        <p class="text-xs text-night-400 mt-1">Connected Live to: <code class="text-emerald-400 font-mono">https://api.romancetoon.com</code></p>
       </div>
 
       <!-- Action items & Live Site link -->
       <div class="flex items-center space-x-3 text-xs">
         <div class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 flex items-center space-x-2">
           <BookOpen class="w-4 h-4 text-romance-400" />
-          <span class="text-white font-bold">{{ mangas.length }} Published Titles</span>
+          <span class="text-white font-bold">{{ mangas.length }} Live Titles</span>
         </div>
         <NuxtLink to="/" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-night-850 hover:bg-night-800 text-night-200 border border-night-700 transition-colors flex items-center space-x-1.5">
           <ExternalLink class="w-3.5 h-3.5" />
@@ -74,7 +74,7 @@
           ]"
         >
           <PlusCircle class="w-4 h-4" />
-          <span>{{ editingMangaId ? 'Edit Romance Title' : 'New Webtoon Title' }}</span>
+          <span>{{ editingMangaId ? 'Edit Title Details' : 'New Webtoon Title' }}</span>
         </button>
 
         <button 
@@ -87,7 +87,7 @@
           ]"
         >
           <SearchCode class="w-4 h-4 text-romance-300" />
-          <span>Scan R2 & Selective Publishing</span>
+          <span>Scan Cloudflare R2 & Selective Publishing</span>
         </button>
 
         <button 
@@ -112,7 +112,7 @@
               <Sparkles class="w-5 h-5 text-romance-400" />
               <span>{{ editingMangaId ? 'Edit Webtoon Details' : 'Publish New Romance Webtoon' }}</span>
             </h2>
-            <p class="text-xs text-night-400 mt-1">Configure all publication metadata and link your Cloudflare R2 folder</p>
+            <p class="text-xs text-night-400 mt-1">Configure metadata to save directly to your live MySQL database</p>
           </div>
 
           <button 
@@ -124,7 +124,7 @@
           </button>
         </div>
 
-        <form @submit.prevent="saveManga" class="space-y-6">
+        <form @submit.prevent="handleSaveManga" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             <!-- Main Title -->
@@ -223,7 +223,7 @@
 
             <!-- Badge -->
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-night-200">Badge (شارة مميزة)</label>
+              <label class="text-xs font-semibold text-night-200">Badge (شارة العمل)</label>
               <select 
                 v-model="form.badge" 
                 class="w-full bg-night-900 border border-night-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-romance-500"
@@ -282,19 +282,20 @@
 
           <!-- Submit Buttons -->
           <div class="flex items-center justify-between pt-4 border-t border-night-850">
-            <p class="text-xs text-night-400">All data saves directly to Hostinger MySQL Database.</p>
+            <p class="text-xs text-night-400">Saves directly to Hostinger MySQL Database.</p>
             <button 
               type="submit"
-              class="px-8 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center space-x-2 transition-all"
+              :disabled="isSubmitting"
+              class="px-8 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center space-x-2 transition-all disabled:opacity-50"
             >
               <CheckCircle class="w-4 h-4" />
-              <span>{{ editingMangaId ? 'Save Changes' : 'Publish Romance Title' }}</span>
+              <span>{{ isSubmitting ? 'Saving to Database...' : (editingMangaId ? 'Save Changes' : 'Publish Romance Title') }}</span>
             </button>
           </div>
         </form>
       </div>
 
-      <!-- TAB 2: Scan R2 & Selective Publishing (CORE USER FEATURE) -->
+      <!-- TAB 2: Scan R2 & Selective Publishing -->
       <div v-if="activeTab === 'scan'" class="p-6 sm:p-8 rounded-3xl glass-panel space-y-6">
         <div class="border-b border-night-850 pb-4">
           <h2 class="font-serif text-xl sm:text-2xl font-bold text-white flex items-center space-x-2">
@@ -302,7 +303,7 @@
             <span>Scan Cloudflare R2 & Selective Chapter Publishing</span>
           </h2>
           <p class="text-xs text-night-400 mt-1">
-            Enter the manga R2 folder ID. The system scans Cloudflare R2, lists all discovered chapters, and lets you decide exactly which chapters to publish now and which to save as drafts!
+            Connects to your Cloudflare R2 bucket, lists all discovered chapter folders, and lets you choose what to publish now and what to keep as drafts!
           </p>
         </div>
 
@@ -333,12 +334,12 @@
 
           <div class="flex items-end md:col-span-1">
             <button 
-              @click="scanR2"
+              @click="handleScanR2" 
               :disabled="isScanning || !scanMangaFolder"
               class="w-full py-2.5 px-6 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
             >
               <RefreshCw :class="['w-4 h-4', isScanning ? 'animate-spin' : '']" />
-              <span>{{ isScanning ? 'Scanning R2 Bucket...' : 'Scan Cloudflare R2' }}</span>
+              <span>{{ isScanning ? 'Scanning Cloudflare R2...' : 'Scan Cloudflare R2' }}</span>
             </button>
           </div>
         </div>
@@ -378,7 +379,7 @@
                   <th class="p-3.5">Chapter</th>
                   <th class="p-3.5">Pages Detected</th>
                   <th class="p-3.5">Chapter Title</th>
-                  <th class="p-3.5">Publishing Status (حالة النشر)</th>
+                  <th class="p-3.5">Publishing Status</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-night-800">
@@ -423,7 +424,7 @@
               Only chapters marked with <span class="text-emerald-400 font-semibold">Publish Now</span> will be visible to readers on the website.
             </p>
             <button 
-              @click="saveScannedChapters" 
+              @click="handleSaveScannedChapters" 
               :disabled="isSavingChapters"
               class="px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-white font-semibold text-xs shadow-lg flex items-center space-x-2 transition-all disabled:opacity-50"
             >
@@ -438,13 +439,13 @@
       <div v-if="activeTab === 'manage'" class="p-6 sm:p-8 rounded-3xl glass-panel space-y-6">
         <div class="flex items-center justify-between pb-4 border-b border-night-850">
           <div>
-            <h2 class="font-serif text-xl sm:text-2xl font-bold text-white">All Published Titles</h2>
-            <p class="text-xs text-night-400 mt-1">Edit metadata, scan chapters, or delete works from the database</p>
+            <h2 class="font-serif text-xl sm:text-2xl font-bold text-white">All Published Titles (Live MySQL)</h2>
+            <p class="text-xs text-night-400 mt-1">Delete works, scan new chapters from R2, or edit title metadata</p>
           </div>
           <span class="text-xs text-night-400 font-mono">{{ mangas.length }} titles registered</span>
         </div>
 
-        <div class="divide-y divide-night-800">
+        <div v-if="mangas.length > 0" class="divide-y divide-night-800">
           <div 
             v-for="manga in mangas" 
             :key="manga.id"
@@ -467,7 +468,7 @@
                 <p class="text-xs text-night-400">
                   <span class="font-mono text-romance-300">R2 ID: {{ manga.r2FolderId || manga.id }}</span>
                   &bull;
-                  <span>{{ manga.chapters.length }} Chapters</span>
+                  <span>{{ (manga.chapters && manga.chapters.length) || 0 }} Chapters</span>
                   &bull;
                   <span>Author: {{ manga.author }}</span>
                 </p>
@@ -511,16 +512,20 @@
                 <ExternalLink class="w-4 h-4" />
               </NuxtLink>
 
-              <!-- Delete Manga -->
+              <!-- Delete Manga Permanently -->
               <button 
-                @click="confirmDeleteManga(manga)"
+                @click="handleDeleteManga(manga)"
                 class="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
-                title="Delete title"
+                title="Delete title permanently from database"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>
           </div>
+        </div>
+
+        <div v-else class="p-8 text-center text-xs text-night-400 border border-night-800 rounded-2xl bg-night-900/40">
+          No titles found in MySQL database. Use the "New Webtoon Title" tab to publish your first work!
         </div>
       </div>
 
@@ -529,8 +534,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { sampleMangas, type Manga } from '~/data/mangas'
+import { ref, reactive, onMounted } from 'vue'
+import { useRomanceApi } from '~/composables/useApi'
 import { 
   ShieldCheck, Lock, BookOpen, ExternalLink, Sparkles, 
   PlusCircle, Layers, CheckCircle, SearchCode, RefreshCw, 
@@ -541,6 +546,11 @@ useHead({
   title: 'RomanceToon Publisher Suite | /mastouri'
 })
 
+const { 
+  fetchMangas, createManga, updateManga, 
+  deleteManga, scanR2, publishChapters 
+} = useRomanceApi()
+
 // Authentication Gate
 const isAuthenticated = ref(false)
 const pinInput = ref('')
@@ -550,16 +560,29 @@ const authenticate = () => {
   if (pinInput.value.trim() === 'mastouri2026' || pinInput.value.trim() === 'mastouri') {
     isAuthenticated.value = true
     authError.value = false
+    loadLiveMangas()
   } else {
     authError.value = true
   }
 }
 
 // Active Tab
-const activeTab = ref<'create' | 'scan' | 'manage'>('create')
+const activeTab = ref<'create' | 'scan' | 'manage'>('manage')
 
-// Mangas list
-const mangas = ref<Manga[]>([...sampleMangas])
+// Live Mangas list from MySQL
+const mangas = ref<any[]>([])
+const isSubmitting = ref(false)
+
+const loadLiveMangas = async () => {
+  mangas.value = await fetchMangas()
+}
+
+onMounted(() => {
+  // If already authenticated in session
+  if (isAuthenticated.value) {
+    loadLiveMangas()
+  }
+})
 
 // Available romance genres
 const availableGenres = [
@@ -596,26 +619,27 @@ const toggleGenre = (genre: string) => {
   }
 }
 
-const editManga = (manga: Manga) => {
+const editManga = (manga: any) => {
   editingMangaId.value = manga.id
   form.title = manga.title
   form.alternativeTitles = (manga.alternativeTitles || []).join(', ')
-  form.r2FolderId = (manga as any).r2FolderId || manga.id
-  form.releaseYear = (manga as any).releaseYear || '2026'
+  form.r2FolderId = manga.r2FolderId || manga.id
+  form.releaseYear = manga.releaseYear || '2026'
   form.author = manga.author || ''
   form.artist = manga.artist || ''
-  form.status = manga.status
+  form.status = manga.status || 'Ongoing'
   form.cover = manga.cover
   form.banner = manga.banner
   form.synopsis = manga.synopsis
   form.badge = manga.badge || 'NEW'
-  form.selectedGenres = [...manga.genres]
+  form.selectedGenres = Array.isArray(manga.genres) && manga.genres.length ? [...manga.genres] : ['Romance']
   activeTab.value = 'create'
 }
 
 const cancelEdit = () => {
   editingMangaId.value = null
   resetForm()
+  activeTab.value = 'manage'
 }
 
 const resetForm = () => {
@@ -631,72 +655,60 @@ const resetForm = () => {
   form.selectedGenres = ['Romance']
 }
 
-const saveManga = () => {
-  const altList = form.alternativeTitles ? form.alternativeTitles.split(',').map(s => s.trim()) : []
+// Save Manga directly to MySQL Database
+const handleSaveManga = async () => {
+  isSubmitting.value = true
 
-  if (editingMangaId.value) {
-    // Update existing
-    const idx = mangas.value.findIndex(m => m.id === editingMangaId.value)
-    if (idx >= 0) {
-      mangas.value[idx] = {
-        ...mangas.value[idx],
-        title: form.title,
-        alternativeTitles: altList,
-        author: form.author,
-        artist: form.artist,
-        status: form.status,
-        cover: form.cover,
-        banner: form.banner || form.cover,
-        synopsis: form.synopsis,
-        genres: [...form.selectedGenres],
-        badge: form.badge
-      }
-      ;(mangas.value[idx] as any).r2FolderId = form.r2FolderId
-      ;(mangas.value[idx] as any).releaseYear = form.releaseYear
-      alert(`✔ Updated "${form.title}" successfully!`)
-    }
-    editingMangaId.value = null
-  } else {
-    // Create new
-    const id = `manga_${Date.now().toString(16)}`
-    const created = {
-      id,
-      slug: form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      title: form.title,
-      alternativeTitles: altList,
-      cover: form.cover,
-      banner: form.banner || form.cover,
-      synopsis: form.synopsis,
-      author: form.author || 'Author',
-      artist: form.artist || 'Studio',
-      genres: [...form.selectedGenres],
-      rating: 5.0,
-      ratingCount: '1',
-      status: form.status,
-      views: '1',
-      bookmarks: '0',
-      badge: form.badge,
-      chapters: []
-    }
-    ;(created as any).r2FolderId = form.r2FolderId || id
-    ;(created as any).releaseYear = form.releaseYear
-    mangas.value.unshift(created)
-    alert(`✔ Published "${created.title}" successfully!`)
+  const payload = {
+    title: form.title,
+    alternativeTitles: form.alternativeTitles,
+    r2FolderId: form.r2FolderId,
+    releaseYear: form.releaseYear,
+    author: form.author,
+    artist: form.artist,
+    status: form.status,
+    cover: form.cover,
+    banner: form.banner || form.cover,
+    synopsis: form.synopsis,
+    genres: form.selectedGenres,
+    badge: form.badge
   }
 
-  resetForm()
-  activeTab.value = 'manage'
+  try {
+    if (editingMangaId.value) {
+      await updateManga(editingMangaId.value, payload)
+      alert(`✔ Updated "${form.title}" in MySQL successfully!`)
+      editingMangaId.value = null
+    } else {
+      await createManga(payload)
+      alert(`✔ Published "${form.title}" to MySQL successfully!`)
+    }
+
+    await loadLiveMangas()
+    resetForm()
+    activeTab.value = 'manage'
+  } catch (err: any) {
+    alert(`Error saving manga: ${err.message}`)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
-const confirmDeleteManga = (manga: Manga) => {
-  if (confirm(`Are you sure you want to delete "${manga.title}" and all its chapters? This action is permanent.`)) {
-    mangas.value = mangas.value.filter(m => m.id !== manga.id)
-    alert(`✔ Deleted "${manga.title}".`)
+// Delete Manga permanently from MySQL Database
+const handleDeleteManga = async (manga: any) => {
+  if (confirm(`Are you sure you want to permanently delete "${manga.title}" from your database? This will completely remove it from the website.`)) {
+    try {
+      await deleteManga(manga.id)
+      alert(`✔ Permanently deleted "${manga.title}".`)
+      await loadLiveMangas()
+    } catch (err: any) {
+      alert(`Error deleting manga: ${err.message}`)
+    }
   }
 }
 
 // -------------------------------------------------------------
-// Cloudflare R2 Scan & Selective Publishing Logic
+// Cloudflare R2 Scan & Selective Publishing
 // -------------------------------------------------------------
 const scanTargetMangaId = ref('')
 const scanMangaFolder = ref('')
@@ -704,60 +716,67 @@ const isScanning = ref(false)
 const isSavingChapters = ref(false)
 const scannedChapters = ref<any[]>([])
 
-const startScanForManga = (manga: Manga) => {
+const startScanForManga = (manga: any) => {
   scanTargetMangaId.value = manga.id
-  scanMangaFolder.value = (manga as any).r2FolderId || manga.id
+  scanMangaFolder.value = manga.r2FolderId || manga.id
   activeTab.value = 'scan'
-  scanR2()
+  handleScanR2()
 }
 
-const scanR2 = () => {
+const handleScanR2 = async () => {
+  if (!scanMangaFolder.value) return
   isScanning.value = true
   scannedChapters.value = []
 
-  // Simulate or API call to /api/r2/scan-manga
-  setTimeout(() => {
+  try {
+    const result = await scanR2(scanMangaFolder.value)
+    if (result.success && Array.isArray(result.chapters)) {
+      scannedChapters.value = result.chapters.map((ch: any) => ({
+        ...ch,
+        status: 'published' // default to published
+      }))
+    } else {
+      alert(result.message || 'No chapters found or R2 credentials not configured on backend.')
+    }
+  } catch (err: any) {
+    alert(`R2 Scan failed: ${err.message}`)
+  } finally {
     isScanning.value = false
-    // Generate realistic scan result based on user's structure: [1, 2, ..., 10]
-    scannedChapters.value = [
-      { chapterNumber: 1, title: 'Chapter 1: The Midnight Contract', pagesCount: 35, status: 'published' },
-      { chapterNumber: 2, title: 'Chapter 2: His Unspoken Rules', pagesCount: 42, status: 'published' },
-      { chapterNumber: 3, title: 'Chapter 3: A Stolen Whisper', pagesCount: 38, status: 'published' },
-      { chapterNumber: 4, title: 'Chapter 4: The Duke\'s Request', pagesCount: 40, status: 'draft' },
-      { chapterNumber: 5, title: 'Chapter 5: Hidden Feelings', pagesCount: 44, status: 'draft' },
-      { chapterNumber: 10, title: 'Chapter 10: The Garden Secret', pagesCount: 39, status: 'draft' }
-    ]
-  }, 1200)
+  }
 }
 
 const setAllChaptersStatus = (status: 'published' | 'draft') => {
   scannedChapters.value.forEach(ch => ch.status = status)
 }
 
-const saveScannedChapters = () => {
+const handleSaveScannedChapters = async () => {
+  if (!scanTargetMangaId.value) {
+    alert('Please select a target manga title from the dropdown.')
+    return
+  }
+
   isSavingChapters.value = true
-  setTimeout(() => {
-    isSavingChapters.value = false
-    const target = mangas.value.find(m => m.id === scanTargetMangaId.value)
-    if (target) {
-      // Add published chapters
-      const published = scannedChapters.value.filter(c => c.status === 'published')
-      published.forEach(p => {
-        const existing = target.chapters.find(c => c.number === p.chapterNumber)
-        if (!existing) {
-          target.chapters.push({
-            id: p.chapterNumber.toString(),
-            number: p.chapterNumber,
-            title: p.title,
-            releaseDate: 'Just now',
-            views: '1',
-            pagesCount: p.pagesCount
-          })
-        }
-      })
-      target.chapters.sort((a, b) => a.number - b.number)
-      alert(`✔ Successfully saved! Published ${published.length} chapters for "${target.title}". Drafts were kept safe for future release.`)
+
+  try {
+    const payload = scannedChapters.value.map(ch => ({
+      chapterNumber: ch.chapterNumber,
+      title: ch.title,
+      status: ch.status,
+      pages: ch.pages || []
+    }))
+
+    const result = await publishChapters(scanTargetMangaId.value, payload)
+    if (result.success) {
+      alert(result.message || 'Chapters saved successfully to MySQL!')
+      await loadLiveMangas()
+      activeTab.value = 'manage'
+    } else {
+      alert(result.message || 'Failed to save chapters.')
     }
-  }, 1000)
+  } catch (err: any) {
+    alert(`Error saving chapters: ${err.message}`)
+  } finally {
+    isSavingChapters.value = false
+  }
 }
 </script>

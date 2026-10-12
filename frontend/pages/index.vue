@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <!-- Hero Banner for Featured Romance -->
-    <HeroBanner :featured="featuredManga" />
+  <div class="space-y-12">
+    <!-- Hero Banner for Featured Romance (if any published) -->
+    <HeroBanner v-if="featuredManga" :featured="featuredManga" />
 
     <!-- Genre Filter Pills -->
-    <div class="mb-10 flex items-center space-x-2 overflow-x-auto pb-2 custom-scroll">
+    <div v-if="mangas.length > 0" class="flex items-center space-x-2 overflow-x-auto pb-2 custom-scroll">
       <button 
         v-for="genre in filterGenres" 
         :key="genre"
@@ -20,8 +20,8 @@
       </button>
     </div>
 
-    <!-- Section: Latest Romance Updates -->
-    <section class="space-y-6">
+    <!-- Section: Latest Romance Releases -->
+    <section v-if="filteredMangas.length > 0" class="space-y-6">
       <div class="flex items-center justify-between pb-4 border-b border-night-850">
         <div class="flex items-center space-x-2.5">
           <div class="w-2.5 h-6 rounded-full bg-gradient-to-b from-romance-500 to-rose-600"></div>
@@ -29,7 +29,7 @@
             Latest Romance Releases
           </h2>
         </div>
-        <span class="text-xs text-night-400 font-medium">Updated minutes ago</span>
+        <span class="text-xs text-night-400 font-medium">{{ filteredMangas.length }} Titles</span>
       </div>
 
       <!-- Manga Grid -->
@@ -42,38 +42,39 @@
       </div>
     </section>
 
-    <!-- Section: Popular Romance Webtoons -->
-    <section class="mt-16 space-y-6">
-      <div class="flex items-center justify-between pb-4 border-b border-night-850">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-500 to-rose-500"></div>
-          <h2 class="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide">
-            Trending & Most Loved
-          </h2>
-        </div>
-        <NuxtLink to="/popular" class="text-xs text-romance-400 hover:text-romance-300 font-semibold flex items-center space-x-1">
-          <span>Explore All</span>
-          <ChevronRight class="w-3.5 h-3.5" />
-        </NuxtLink>
+    <!-- Empty State when no titles are published yet in MySQL -->
+    <div v-else-if="!isLoading" class="min-h-[420px] p-8 rounded-3xl glass-panel text-center flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto my-12 border border-white/10 shadow-2xl">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-romance-600/30 to-rose-500/20 border border-romance-500/40 flex items-center justify-center text-romance-400">
+        <Heart class="w-8 h-8 fill-romance-500/30 animate-pulse" />
       </div>
+      <h3 class="font-serif text-2xl font-bold text-white">Your Romance Catalog is Ready</h3>
+      <p class="text-xs sm:text-sm text-night-400 leading-relaxed max-w-md">
+        Your database is connected and active. You can now publish your first romance webtoon title and scan chapters directly from Cloudflare R2!
+      </p>
+      <NuxtLink 
+        to="/mastouri" 
+        class="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center space-x-2 transition-all transform hover:-translate-y-0.5"
+      >
+        <span>Open Management Hub (/mastouri)</span>
+      </NuxtLink>
+    </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
-        <MangaCard 
-          v-for="manga in popularMangas" 
-          :key="`pop-${manga.id}`" 
-          :manga="manga" 
-        />
-      </div>
-    </section>
+    <!-- Loading Skeleton -->
+    <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8">
+      <div v-for="i in 4" :key="i" class="h-64 rounded-2xl bg-night-900/60 animate-pulse border border-night-800"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { sampleMangas } from '~/data/mangas'
-import { ChevronRight } from '@lucide/vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRomanceApi } from '~/composables/useApi'
+import { Heart } from '@lucide/vue'
 
-const featuredManga = sampleMangas[0]
+const { fetchMangas } = useRomanceApi()
+
+const mangas = ref<any[]>([])
+const isLoading = ref(true)
 const selectedGenre = ref('All Romance')
 
 const filterGenres = [
@@ -85,14 +86,24 @@ const filterGenres = [
   'Contract Marriage'
 ]
 
-const filteredMangas = computed(() => {
-  if (selectedGenre.value === 'All Romance') {
-    return sampleMangas
-  }
-  return sampleMangas.filter(m => m.genres.includes(selectedGenre.value))
+const loadMangas = async () => {
+  isLoading.value = true
+  mangas.value = await fetchMangas()
+  isLoading.value = false
+}
+
+onMounted(() => {
+  loadMangas()
 })
 
-const popularMangas = computed(() => {
-  return [...sampleMangas].sort((a, b) => b.rating - a.rating)
+const featuredManga = computed(() => {
+  return mangas.value.length > 0 ? mangas.value[0] : null
+})
+
+const filteredMangas = computed(() => {
+  if (selectedGenre.value === 'All Romance') {
+    return mangas.value
+  }
+  return mangas.value.filter(m => m.genres && m.genres.includes(selectedGenre.value))
 })
 </script>

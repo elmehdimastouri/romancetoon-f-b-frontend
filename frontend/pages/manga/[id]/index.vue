@@ -3,7 +3,7 @@
     <!-- Header Banner Backdrop -->
     <div class="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 sm:-mt-8 h-64 sm:h-80 overflow-hidden">
       <img 
-        :src="manga.banner" 
+        :src="manga.banner || manga.cover" 
         :alt="manga.title" 
         class="w-full h-full object-cover object-center filter blur-md brightness-40 scale-110"
       />
@@ -31,16 +31,17 @@
         <!-- Action Buttons -->
         <div class="w-full space-y-2">
           <NuxtLink 
-            :to="`/manga/${manga.id}/chapter/1`"
+            v-if="publishedChapters.length > 0"
+            :to="`/manga/${manga.id}/chapter/${publishedChapters[0].number}`"
             class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-sm shadow-glow-pink flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5"
           >
             <BookOpen class="w-4 h-4" />
-            <span>Read First (Ch. 1)</span>
+            <span>Read First (Ch. {{ publishedChapters[0].number }})</span>
           </NuxtLink>
 
           <NuxtLink 
             v-if="latestChapter"
-            :to="`/manga/${manga.id}/chapter/${latestChapter.id}`"
+            :to="`/manga/${manga.id}/chapter/${latestChapter.number}`"
             class="w-full py-3 px-4 rounded-xl bg-night-900 hover:bg-night-850 text-night-200 border border-night-800 font-medium text-xs flex items-center justify-center space-x-2 transition-colors"
           >
             <span>Read Latest (Ch. {{ latestChapter.number }})</span>
@@ -57,17 +58,17 @@
             <span class="text-night-400">Artist:</span>
             <span class="text-white font-medium">{{ manga.artist }}</span>
           </div>
+          <div v-if="manga.releaseYear" class="flex justify-between py-1 border-b border-night-800">
+            <span class="text-night-400">Release Year:</span>
+            <span class="text-white font-medium">{{ manga.releaseYear }}</span>
+          </div>
           <div class="flex justify-between py-1 border-b border-night-800">
             <span class="text-night-400">Status:</span>
             <span class="text-emerald-400 font-medium">{{ manga.status }}</span>
           </div>
-          <div class="flex justify-between py-1 border-b border-night-800">
-            <span class="text-night-400">Views:</span>
-            <span class="text-white font-medium">{{ manga.views }}</span>
-          </div>
           <div class="flex justify-between py-1">
-            <span class="text-night-400">Bookmarks:</span>
-            <span class="text-romance-300 font-medium">{{ manga.bookmarks }}</span>
+            <span class="text-night-400">Views:</span>
+            <span class="text-white font-medium">{{ manga.views || '0' }}</span>
           </div>
         </div>
       </div>
@@ -81,15 +82,15 @@
             {{ manga.title }}
           </h1>
 
-          <p v-if="manga.alternativeTitles" class="text-xs text-night-400 italic">
+          <p v-if="manga.alternativeTitles && manga.alternativeTitles.length" class="text-xs text-night-400 italic">
             Also known as: {{ manga.alternativeTitles.join(' • ') }}
           </p>
 
           <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
             <div class="flex items-center space-x-1 text-amber-400 font-bold bg-night-900 px-3 py-1 rounded-lg border border-night-800 text-sm">
               <Star class="w-4 h-4 fill-amber-400" />
-              <span>{{ manga.rating }}</span>
-              <span class="text-night-400 font-normal text-xs">({{ manga.ratingCount }})</span>
+              <span>{{ manga.rating || '5.0' }}</span>
+              <span class="text-night-400 font-normal text-xs">({{ manga.ratingCount || '1' }})</span>
             </div>
 
             <span 
@@ -115,10 +116,10 @@
 
         <!-- Chapters List Section -->
         <div class="space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-night-800">
+          <div class="flex items-center justify-between pb-3 border-b border-night-850">
             <div class="flex items-center space-x-2">
               <ListOrdered class="w-5 h-5 text-romance-400" />
-              <h2 class="font-serif text-xl font-bold text-white">Chapters ({{ manga.chapters.length }})</h2>
+              <h2 class="font-serif text-xl font-bold text-white">Chapters ({{ publishedChapters.length }})</h2>
             </div>
             
             <input 
@@ -129,12 +130,12 @@
             />
           </div>
 
-          <!-- Chapters Grid / List -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Chapters List -->
+          <div v-if="filteredChapters.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <NuxtLink 
               v-for="ch in filteredChapters" 
-              :key="ch.id"
-              :to="`/manga/${manga.id}/chapter/${ch.id}`"
+              :key="ch.number"
+              :to="`/manga/${manga.id}/chapter/${ch.number}`"
               class="p-4 rounded-xl bg-night-900 hover:bg-night-850 border border-night-800/80 hover:border-romance-500/50 flex items-center justify-between group transition-all"
             >
               <div class="flex items-center space-x-3">
@@ -145,15 +146,18 @@
                   <h4 class="text-xs sm:text-sm font-semibold text-night-100 group-hover:text-romance-300 transition-colors line-clamp-1">
                     {{ ch.title || `Chapter ${ch.number}` }}
                   </h4>
-                  <p class="text-[10px] text-night-400 mt-0.5">{{ ch.releaseDate }}</p>
+                  <p class="text-[10px] text-night-400 mt-0.5">{{ ch.releaseDate || 'Published' }}</p>
                 </div>
               </div>
 
               <div class="flex items-center space-x-2 text-night-400 group-hover:text-romance-400">
-                <span class="text-[10px] font-mono hidden sm:inline">{{ ch.views }}</span>
                 <ChevronRight class="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
               </div>
             </NuxtLink>
+          </div>
+
+          <div v-else class="p-8 rounded-2xl bg-night-900/60 border border-night-800 text-center text-xs text-night-400">
+            No published chapters available yet for this title.
           </div>
         </div>
 
@@ -161,41 +165,55 @@
     </div>
   </div>
 
+  <div v-else-if="isLoading" class="min-h-[400px] flex items-center justify-center">
+    <div class="text-romance-400 animate-pulse text-sm">Loading webtoon details...</div>
+  </div>
+
   <div v-else class="min-h-[400px] flex items-center justify-center text-center">
     <div>
       <p class="text-night-400">Manga not found</p>
-      <NuxtLink to="/" class="mt-4 inline-block text-romance-400 hover:underline text-sm">Return to Home</NuxtLink>
+      <NuxtLink to="/" class="mt-4 inline-block text-romance-400 hover:underline text-sm">Return to RomanceToon Home</NuxtLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { sampleMangas } from '~/data/mangas'
+import { useRomanceApi } from '~/composables/useApi'
 import { Star, BookOpen, Heart, ListOrdered, ChevronRight } from '@lucide/vue'
 
 const route = useRoute()
 const mangaId = computed(() => route.params.id as string)
+const { fetchManga } = useRomanceApi()
 
-const manga = computed(() => {
-  return sampleMangas.find(m => m.id === mangaId.value || m.slug === mangaId.value) || sampleMangas[0]
+const manga = ref<any>(null)
+const isLoading = ref(true)
+const chapterSearch = ref('')
+
+onMounted(async () => {
+  isLoading.value = true
+  manga.value = await fetchManga(mangaId.value)
+  isLoading.value = false
+})
+
+const publishedChapters = computed(() => {
+  if (!manga.value || !manga.value.chapters) return []
+  return manga.value.chapters.filter((c: any) => c.isPublished !== false)
 })
 
 const latestChapter = computed(() => {
-  if (!manga.value || !manga.value.chapters.length) return null
-  return manga.value.chapters[manga.value.chapters.length - 1]
+  return publishedChapters.value.length > 0 
+    ? publishedChapters.value[publishedChapters.value.length - 1] 
+    : null
 })
 
-const chapterSearch = ref('')
-
 const filteredChapters = computed(() => {
-  if (!manga.value) return []
-  if (!chapterSearch.value.trim()) return manga.value.chapters
+  if (!chapterSearch.value.trim()) return publishedChapters.value
   const query = chapterSearch.value.toLowerCase()
-  return manga.value.chapters.filter(ch => 
+  return publishedChapters.value.filter((ch: any) => 
     ch.number.toString().includes(query) || 
-    ch.title.toLowerCase().includes(query)
+    (ch.title && ch.title.toLowerCase().includes(query))
   )
 })
 </script>
