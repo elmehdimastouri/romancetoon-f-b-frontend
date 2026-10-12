@@ -392,17 +392,26 @@ app.post('/api/r2/scan-manga', async (req, res) => {
     let matchedPrefix = ''
 
     for (const prefix of prefixesToTry) {
-      const command = new ListObjectsV2Command({
-        Bucket: r2Bucket,
-        Prefix: prefix,
-        MaxKeys: 1000
-      })
-      const response = await s3.send(command)
-      if (response.Contents && response.Contents.length > 0) {
-        objects = response.Contents
-        matchedPrefix = prefix
-        break
+      let isTruncated = true
+      let continuationToken = undefined
+
+      while (isTruncated) {
+        const command = new ListObjectsV2Command({
+          Bucket: r2Bucket,
+          Prefix: prefix,
+          MaxKeys: 1000,
+          ContinuationToken: continuationToken
+        })
+        const response = await s3.send(command)
+        if (response.Contents && response.Contents.length > 0) {
+          objects.push(...response.Contents)
+          matchedPrefix = prefix
+        }
+        isTruncated = response.IsTruncated
+        continuationToken = response.NextContinuationToken
       }
+
+      if (objects.length > 0) break
     }
 
     if (objects.length === 0) {
@@ -412,10 +421,10 @@ app.post('/api/r2/scan-manga', async (req, res) => {
       })
     }
 
-    const validExtensions = new Set(['.webp', '.png', '.jpg', '.jpeg'])
+    const validExtensions = new Set(['.webp', '.png', '.jpg', '.jpeg', '.avif'])
     
     // Group files by chapter number
-    // Example Key: manga_611ac7d4f93e7/1/001.webp or manga_611ac7d4f93e7/10/page.jpg
+    // Example Key: data/manga_0033902e486f1/1/001.webp
     const chaptersMap = new Map()
 
     for (const obj of objects) {
@@ -423,9 +432,9 @@ app.post('/api/r2/scan-manga', async (req, res) => {
       const ext = key.slice(key.lastIndexOf('.')).toLowerCase()
       if (!validExtensions.has(ext)) continue
 
-      // Remove prefix to get relative path: "1/001.webp" or "chapter-2/01.png"
-      const relative = key.slice(matchedPrefix.length)
-      const parts = relative.split('/')
+      // Remove prefix to get relative path: e.g. "1/001.webp"
+      const relative = key.startsWith(matchedPrefix) ? key.slice(matchedPrefix.length) : key
+      const parts = relative.replace(/^\/+/, '').split('/')
 
       if (parts.length >= 2) {
         const chapterFolder = parts[0]
