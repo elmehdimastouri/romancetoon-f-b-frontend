@@ -98,6 +98,18 @@ export async function initMySQL() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `)
 
+    // 4. Manga Bookmarks Table (Public Bookmarks Counter)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS manga_bookmarks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        manga_id VARCHAR(64) NOT NULL,
+        user_fingerprint VARCHAR(128) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_manga_bookmark (manga_id, user_fingerprint),
+        FOREIGN KEY (manga_id) REFERENCES mangas(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `)
+
     conn.release()
     return true
   } catch (err) {

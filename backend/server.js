@@ -566,6 +566,98 @@ app.post('/api/mangas/:id/view', async (req, res) => {
   })
 })
 
+// Toggle/Update public bookmarks counter for manga
+app.post('/api/mangas/:id/bookmark', async (req, res) => {
+  const { id } = req.params
+  const { action, userFingerprint } = req.body || {}
+  const fingerprint = (userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [mRows] = await pool.query('SELECT id, bookmarks FROM mangas WHERE id = ? OR slug = ?', [id, id])
+      if (mRows.length === 0) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+      const mangaId = mRows[0].id
+
+      if (action === 'add') {
+        await pool.query(
+          'INSERT IGNORE INTO manga_bookmarks (manga_id, user_fingerprint) VALUES (?, ?)',
+          [mangaId, fingerprint]
+        )
+      } else if (action === 'remove') {
+        await pool.query(
+          'DELETE FROM manga_bookmarks WHERE manga_id = ? AND user_fingerprint = ?',
+          [mangaId, fingerprint]
+        )
+      } else {
+        // Toggle
+        const [existing] = await pool.query(
+          'SELECT id FROM manga_bookmarks WHERE manga_id = ? AND user_fingerprint = ?',
+          [mangaId, fingerprint]
+        )
+        if (existing.length > 0) {
+          await pool.query('DELETE FROM manga_bookmarks WHERE manga_id = ? AND user_fingerprint = ?', [mangaId, fingerprint])
+        } else {
+          await pool.query('INSERT IGNORE INTO manga_bookmarks (manga_id, user_fingerprint) VALUES (?, ?)', [mangaId, fingerprint])
+        }
+      }
+
+      // Count total bookmarks
+      const [countRows] = await pool.query(
+        'SELECT COUNT(*) as total FROM manga_bookmarks WHERE manga_id = ?',
+        [mangaId]
+      )
+      const total = countRows[0]?.total || 0
+
+      // Update mangas table record
+      await pool.query('UPDATE mangas SET bookmarks = ? WHERE id = ?', [total.toString(), mangaId])
+
+      return res.json({
+        success: true,
+        mangaId,
+        bookmarks: total.toString()
+      })
+    } catch (err) {
+      console.error('MySQL bookmark error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  // Persistent JSON Fallback
+  const db = loadData()
+  const manga = (db.mangas || []).find(m => m.id === id || m.slug === id)
+  if (!manga) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+  if (!manga.bookmarkedUsers) {
+    manga.bookmarkedUsers = []
+  }
+
+  if (action === 'add') {
+    if (!manga.bookmarkedUsers.includes(fingerprint)) {
+      manga.bookmarkedUsers.push(fingerprint)
+    }
+  } else if (action === 'remove') {
+    manga.bookmarkedUsers = manga.bookmarkedUsers.filter(fp => fp !== fingerprint)
+  } else {
+    if (manga.bookmarkedUsers.includes(fingerprint)) {
+      manga.bookmarkedUsers = manga.bookmarkedUsers.filter(fp => fp !== fingerprint)
+    } else {
+      manga.bookmarkedUsers.push(fingerprint)
+    }
+  }
+
+  manga.bookmarks = manga.bookmarkedUsers.length.toString()
+  saveData(db)
+
+  res.json({
+    success: true,
+    mangaId: manga.id,
+    bookmarks: manga.bookmarks
+  })
+})
+
 // ---------------------------------------------------------------------------
 // 3. Cloudflare R2 SCAN & Selective Publishing (Core Feature!)
 // ---------------------------------------------------------------------------

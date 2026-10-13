@@ -76,6 +76,9 @@
           >
             <Bookmark :class="['w-4 h-4', isBookmarked(manga.id || manga.slug) ? 'fill-romance-400 text-romance-400' : 'text-night-400']" />
             <span>{{ isBookmarked(manga.id || manga.slug) ? 'In Bookmarks' : 'Add to Bookmarks' }}</span>
+            <span v-if="manga.bookmarks" class="ml-1 px-1.5 py-0.5 rounded-md bg-night-950/60 border border-white/5 text-[10px] font-mono text-night-300">
+              {{ formatViews(manga.bookmarks) }}
+            </span>
           </button>
         </div>
 
@@ -96,6 +99,10 @@
           <div class="flex justify-between py-1 border-b border-night-800">
             <span class="text-night-400">Status:</span>
             <span class="text-emerald-400 font-medium">{{ manga.status }}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-night-800">
+            <span class="text-night-400">Bookmarks:</span>
+            <span class="text-romance-300 font-medium">{{ formatViews(manga.bookmarks || '0') }}</span>
           </div>
           <div class="flex justify-between py-1">
             <span class="text-night-400">Views:</span>

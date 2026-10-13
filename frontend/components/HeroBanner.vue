@@ -78,7 +78,7 @@
         </div>
         <div class="flex items-center justify-between text-xs text-night-400 pb-2 border-b border-night-800">
           <span>Bookmarks</span>
-          <span class="text-romance-300 font-bold">{{ featured.bookmarks }}</span>
+          <span class="text-romance-300 font-bold">{{ formatViews(featured.bookmarks) }}</span>
         </div>
         <div class="flex items-center justify-between text-xs text-night-400">
           <span>Status</span>

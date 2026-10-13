@@ -154,6 +154,21 @@ export function useRomanceApi() {
     }
   }
 
+  // Toggle/Update public bookmark count
+  const updateBookmark = async (mangaId: string, action: 'add' | 'remove' | 'toggle' = 'toggle', userFingerprint?: string) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/mangas/${mangaId}/bookmark`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, userFingerprint })
+      })
+      return await res.json()
+    } catch (err) {
+      console.error(`Failed to update bookmark for manga ${mangaId}:`, err)
+      return null
+    }
+  }
+
   return {
     API_BASE_URL,
     getApiUrl,
@@ -167,6 +182,7 @@ export function useRomanceApi() {
     publishChapters,
     rateManga,
     fetchMangaRating,
-    recordView
+    recordView,
+    updateBookmark
   }
 }

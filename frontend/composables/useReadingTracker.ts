@@ -104,17 +104,38 @@ export function useReadingTracker() {
   }
 
   const toggleBookmark = (manga: any) => {
-    if (!manga) return
-    const id = manga.id || manga.slug
-    const slug = manga.slug || manga.id
+    if (!manga) return false
+    const id = (manga.id || manga.slug || '').toString()
+    const slug = (manga.slug || manga.id || '').toString()
 
-    if (isBookmarked(id) || isBookmarked(slug)) {
+    const currentlyBookmarked = isBookmarked(id) || isBookmarked(slug)
+    let isAdded = false
+
+    if (currentlyBookmarked) {
       removeBookmark(id)
-      return false // removed
+      isAdded = false
     } else {
       addBookmark(manga)
-      return true // added
+      isAdded = true
     }
+
+    // Sync public bookmark counter with server
+    if (process.client) {
+      try {
+        const { updateBookmark } = useRomanceApi()
+        const fp = getUserFingerprint()
+        const targetId = manga.id || id || slug
+        updateBookmark(targetId, isAdded ? 'add' : 'remove', fp).then((res) => {
+          if (res && res.bookmarks !== undefined) {
+            manga.bookmarks = res.bookmarks
+          }
+        })
+      } catch (e) {
+        // Silent catch
+      }
+    }
+
+    return isAdded
   }
 
   const addBookmark = (manga: any) => {
