@@ -9,10 +9,10 @@
           </div>
           <div>
             <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
-              سجل القراءة <span class="text-romance-400 font-sans text-xl sm:text-2xl font-normal">/ Reading History</span>
+              Reading History
             </h1>
             <p class="text-xs sm:text-sm text-night-400 mt-0.5">
-              يتم حفظ آخر فصل قرأته تلقائياً على جهازك لتتمكن من إكمال القراءة فوراً من حيث توقفت.
+              Your reading progress is saved automatically on your device so you can jump back in anytime.
             </p>
           </div>
         </div>
@@ -25,7 +25,7 @@
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="بحث في السجل..." 
+            placeholder="Search history..." 
             class="w-full bg-night-900 border border-night-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-night-500 focus:outline-none focus:border-romance-500/70"
           />
           <Search class="w-4 h-4 text-night-400 absolute left-3 top-2.5 pointer-events-none" />
@@ -35,10 +35,10 @@
         <button 
           @click="confirmClear"
           class="px-3.5 py-2 rounded-xl bg-night-900 hover:bg-rose-950/40 text-night-400 hover:text-rose-400 border border-night-800 hover:border-rose-900/50 text-xs font-medium transition-colors flex items-center space-x-1.5"
-          title="مسح سجل القراءة بالكامل"
+          title="Clear all reading history"
         >
           <Trash2 class="w-3.5 h-3.5" />
-          <span>مسح السجل</span>
+          <span>Clear History</span>
         </button>
       </div>
     </div>
@@ -49,11 +49,11 @@
         <span class="px-2.5 py-0.5 rounded-full bg-romance-600/20 text-romance-300 font-mono font-semibold border border-romance-500/30">
           {{ filteredHistory.length }}
         </span>
-        <span>عمل قيد المتابعة</span>
+        <span>{{ filteredHistory.length === 1 ? 'title' : 'titles' }} in progress</span>
       </div>
 
       <div class="text-[11px] text-night-500">
-        يتم التحديث تلقائياً بمجرد فتح أي فصل
+        Tracks your last read chapter automatically
       </div>
     </div>
 
@@ -92,7 +92,7 @@
               <button 
                 @click.stop.prevent="removeFromHistory(item.id)"
                 class="p-1 rounded-lg text-night-500 hover:text-rose-400 hover:bg-night-800 transition-colors shrink-0"
-                title="حذف من السجل"
+                title="Remove from history"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -102,7 +102,7 @@
             <div class="flex flex-wrap items-center gap-2 pt-1">
               <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-romance-600/20 border border-romance-500/40 text-romance-300 font-mono text-xs font-bold">
                 <BookOpen class="w-3.5 h-3.5" />
-                <span>آخر فصل: {{ item.chapterNumber }}</span>
+                <span>Last Read: Ch. {{ item.chapterNumber }}</span>
               </span>
 
               <span class="text-[11px] text-night-400 flex items-center space-x-1">
@@ -120,16 +120,16 @@
               class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink flex items-center justify-center space-x-1.5 transition-all transform hover:-translate-y-0.5"
             >
               <Play class="w-3.5 h-3.5 fill-white" />
-              <span>متابعة القراءة (فصل {{ item.chapterNumber }})</span>
+              <span>Continue Ch. {{ item.chapterNumber }}</span>
             </NuxtLink>
 
             <!-- Details button -->
             <NuxtLink 
               :to="`/webtoon/${item.slug || item.id}`"
               class="py-2 px-3 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-300 hover:text-white text-xs font-medium transition-colors"
-              title="صفحة المانهوا"
+              title="Webtoon details"
             >
-              <span>التفاصيل</span>
+              <span>Details</span>
             </NuxtLink>
           </div>
         </div>
@@ -143,10 +143,10 @@
       </div>
       <div class="space-y-2">
         <h3 class="text-xl font-serif font-bold text-white">
-          سجل القراءة فارغ حتى الآن
+          Reading History is Empty
         </h3>
         <p class="text-xs sm:text-sm text-night-400 max-w-md mx-auto leading-relaxed">
-          بمجرد فتح أي فصل من فصول الويبتون أو المانهوا، سيتم حفظ مكان توقفك هنا تلقائياً حتى يسهل عليك إكمال القراءة بنقرة واحدة بدون أي عناء.
+          As soon as you start reading chapters, your progress will be automatically tracked here so you can pick up right where you left off.
         </p>
       </div>
       <div>
@@ -155,7 +155,7 @@
           class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-transform transform hover:-translate-y-0.5"
         >
           <Sparkles class="w-4 h-4" />
-          <span>ابدأ قراءة مانهوا الآن</span>
+          <span>Start Reading Webtoons</span>
         </NuxtLink>
       </div>
     </div>
@@ -168,9 +168,9 @@ import { History, Clock, BookOpen, Play, Trash2, Search, Sparkles } from '@lucid
 import { useReadingTracker } from '~/composables/useReadingTracker'
 
 useHead({
-  title: 'سجل القراءة | RomanceToon',
+  title: 'Reading History | RomanceToon',
   meta: [
-    { name: 'description', content: 'سجل القراءة لمتابعة فصول المانهوا والويبتون من حيث توقفت.' }
+    { name: 'description', content: 'Track your romance webtoon and manhwa reading progress.' }
   ]
 })
 
@@ -179,7 +179,7 @@ const { history, removeFromHistory, clearHistory, formatTimeAgo } = useReadingTr
 const searchQuery = ref('')
 
 const confirmClear = () => {
-  if (confirm('هل أنت متأكد من رغبتك في مسح سجل القراءة بالكامل؟')) {
+  if (confirm('Are you sure you want to clear your reading history?')) {
     clearHistory()
   }
 }

@@ -80,7 +80,7 @@
               ? 'bg-romance-600/20 border-romance-500 text-romance-300'
               : 'bg-night-850 hover:bg-night-800 border-night-800 text-night-200 hover:text-romance-400'
           ]"
-          :title="isBookmarked(manga.id || manga.slug) ? 'إزالة من المفضلة' : 'حفظ في المفضلة'"
+          :title="isBookmarked(manga.id || manga.slug) ? 'Remove from Bookmarks' : 'Save to Bookmarks'"
         >
           <Bookmark :class="['w-4 h-4', isBookmarked(manga.id || manga.slug) ? 'fill-romance-400 text-romance-400' : '']" />
           <span class="hidden md:inline">{{ isBookmarked(manga.id || manga.slug) ? 'Saved' : 'Save' }}</span>
@@ -213,7 +213,7 @@
         @click="scrollToTop"
         class="fixed bottom-20 right-6 z-40 p-3.5 rounded-full bg-gradient-to-tr from-romance-600 to-blossom-500 text-white shadow-lg shadow-romance-500/25 hover:shadow-romance-500/40 hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 group backdrop-blur-md"
         aria-label="Scroll to top"
-        title="الصعود للأعلى"
+        title="Scroll to top"
       >
         <ChevronUp class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
       </button>

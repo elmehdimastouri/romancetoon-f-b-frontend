@@ -9,10 +9,10 @@
           </div>
           <div>
             <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
-              المفضلة والمكتبة <span class="text-romance-400 font-sans text-xl sm:text-2xl font-normal">/ Bookmarks</span>
+              My Bookmarks
             </h1>
             <p class="text-xs sm:text-sm text-night-400 mt-0.5">
-              الأعمال المحفوظة محلياً على جهازك لسهولة الوصول إليها في أي وقت بدون الحاجة لتسجيل الدخول.
+              Saved locally on your device for quick access anytime — no login or account required.
             </p>
           </div>
         </div>
@@ -25,7 +25,7 @@
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="بحث في المفضلة..." 
+            placeholder="Search saved titles..." 
             class="w-full bg-night-900 border border-night-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-night-500 focus:outline-none focus:border-romance-500/70"
           />
           <Search class="w-4 h-4 text-night-400 absolute left-3 top-2.5 pointer-events-none" />
@@ -36,19 +36,19 @@
           v-model="sortBy"
           class="bg-night-900 border border-night-800 rounded-xl py-2 px-3 text-xs text-night-300 focus:outline-none focus:border-romance-500 cursor-pointer"
         >
-          <option value="recent">الأحدث إضافة</option>
-          <option value="title">الاسم (أ - ي)</option>
-          <option value="rating">الأعلى تقييماً</option>
+          <option value="recent">Recently Added</option>
+          <option value="title">Title (A - Z)</option>
+          <option value="rating">Top Rated</option>
         </select>
 
         <!-- Clear all button -->
         <button 
           @click="confirmClear"
           class="px-3.5 py-2 rounded-xl bg-night-900 hover:bg-rose-950/40 text-night-400 hover:text-rose-400 border border-night-800 hover:border-rose-900/50 text-xs font-medium transition-colors flex items-center space-x-1.5"
-          title="مسح كل المفضلة"
+          title="Clear all bookmarks"
         >
           <Trash2 class="w-3.5 h-3.5" />
-          <span>مسح الكل</span>
+          <span>Clear All</span>
         </button>
       </div>
     </div>
@@ -59,11 +59,11 @@
         <span class="px-2.5 py-0.5 rounded-full bg-romance-600/20 text-romance-300 font-mono font-semibold border border-romance-500/30">
           {{ filteredBookmarks.length }}
         </span>
-        <span>عمل في قائمتك المفضلة</span>
+        <span>saved {{ filteredBookmarks.length === 1 ? 'title' : 'titles' }}</span>
       </div>
 
       <div class="text-[11px] text-night-500">
-        تخزين محلي آمن (Local Storage)
+        Saved securely in your browser's local storage
       </div>
     </div>
 
@@ -89,7 +89,7 @@
           <button 
             @click.stop.prevent="removeBookmark(item.id)"
             class="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-night-950/80 hover:bg-rose-600 backdrop-blur-md text-night-300 hover:text-white transition-all shadow-md group/btn"
-            title="إزالة من المفضلة"
+            title="Remove from Bookmarks"
           >
             <Trash2 class="w-3.5 h-3.5" />
           </button>
@@ -105,8 +105,8 @@
             v-if="getLastRead(item)" 
             class="absolute bottom-2.5 left-2.5 right-2.5 px-2 py-1 rounded-lg bg-night-950/90 backdrop-blur-md border border-romance-500/30 flex items-center justify-between text-[11px]"
           >
-            <span class="text-romance-300 font-medium">وصلت إلى:</span>
-            <span class="text-white font-bold font-mono">فصل {{ getLastRead(item)?.chapterNumber }}</span>
+            <span class="text-romance-300 font-medium">Progress:</span>
+            <span class="text-white font-bold font-mono">Ch. {{ getLastRead(item)?.chapterNumber }}</span>
           </div>
         </div>
 
@@ -131,7 +131,7 @@
               class="w-full py-2 px-3 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-semibold shadow-glow-pink flex items-center justify-center space-x-1.5 transition-colors"
             >
               <BookOpen class="w-3.5 h-3.5" />
-              <span>أكمل فصل {{ getLastRead(item)?.chapterNumber }}</span>
+              <span>Continue Ch. {{ getLastRead(item)?.chapterNumber }}</span>
             </NuxtLink>
 
             <NuxtLink 
@@ -140,7 +140,7 @@
               class="w-full py-2 px-3 rounded-xl bg-night-850 hover:bg-night-800 text-night-200 hover:text-white border border-night-800 text-xs font-medium flex items-center justify-center space-x-1.5 transition-colors"
             >
               <BookOpen class="w-3.5 h-3.5" />
-              <span>فصل {{ item.latestChapter }}</span>
+              <span>Read Ch. {{ item.latestChapter }}</span>
             </NuxtLink>
 
             <NuxtLink 
@@ -148,7 +148,7 @@
               :to="`/webtoon/${item.slug || item.id}`"
               class="w-full py-2 px-3 rounded-xl bg-night-850 hover:bg-night-800 text-night-200 hover:text-white border border-night-800 text-xs font-medium flex items-center justify-center transition-colors"
             >
-              <span>عرض العمل</span>
+              <span>View Details</span>
             </NuxtLink>
           </div>
         </div>
@@ -162,10 +162,10 @@
       </div>
       <div class="space-y-2">
         <h3 class="text-xl font-serif font-bold text-white">
-          قائمتك المفضلة فارغة حالياً
+          Your Bookmarks List is Empty
         </h3>
         <p class="text-xs sm:text-sm text-night-400 max-w-md mx-auto leading-relaxed">
-          لم تقم بحفظ أي أعمال بعد. تصفح أحدث وأجمل المانهوا والويبتون الرومانسية واضغط على أيقونة المفضلة في صفحة العمل لتصل إليها مباشرة من هنا.
+          You haven't bookmarked any webtoons yet. Browse our romance collection and click the bookmark button on any title to save it here for easy reading.
         </p>
       </div>
       <div>
@@ -174,7 +174,7 @@
           class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-transform transform hover:-translate-y-0.5"
         >
           <Sparkles class="w-4 h-4" />
-          <span>استكشف الأعمال الرومانسية</span>
+          <span>Explore Romance Webtoons</span>
         </NuxtLink>
       </div>
     </div>
@@ -187,9 +187,9 @@ import { Bookmark, Search, Trash2, Star, BookOpen, Sparkles } from '@lucide/vue'
 import { useReadingTracker, type BookmarkItem } from '~/composables/useReadingTracker'
 
 useHead({
-  title: 'المفضلة والمكتبة | RomanceToon',
+  title: 'My Bookmarks | RomanceToon',
   meta: [
-    { name: 'description', content: 'قائمتك المفضلة من المانهوا والويبتون الرومانسية المحفوظة محلياً.' }
+    { name: 'description', content: 'Your saved romance webtoons and manhwa collection.' }
   ]
 })
 
@@ -203,7 +203,7 @@ const getLastRead = (item: BookmarkItem) => {
 }
 
 const confirmClear = () => {
-  if (confirm('هل أنت متأكد من رغبتك في مسح جميع الأعمال المحفوظة في المفضلة؟')) {
+  if (confirm('Are you sure you want to clear all saved bookmarks?')) {
     clearBookmarks()
   }
 }

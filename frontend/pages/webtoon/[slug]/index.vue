@@ -37,7 +37,7 @@
             class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-sm shadow-glow-pink flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5"
           >
             <Play class="w-4 h-4 fill-white" />
-            <span>متابعة القراءة (فصل {{ userHistory.chapterNumber }})</span>
+            <span>Continue Reading (Ch. {{ userHistory.chapterNumber }})</span>
           </NuxtLink>
 
           <!-- Read First Chapter -->
@@ -75,7 +75,7 @@
             ]"
           >
             <Bookmark :class="['w-4 h-4', isBookmarked(manga.id || manga.slug) ? 'fill-romance-400 text-romance-400' : 'text-night-400']" />
-            <span>{{ isBookmarked(manga.id || manga.slug) ? 'محفوظ في المفضلة' : 'إضافة إلى المفضلة' }}</span>
+            <span>{{ isBookmarked(manga.id || manga.slug) ? 'In Bookmarks' : 'Add to Bookmarks' }}</span>
           </button>
         </div>
 

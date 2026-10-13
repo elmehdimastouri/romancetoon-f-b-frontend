@@ -210,12 +210,12 @@ export function useReadingTracker() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffMins < 1) return 'الآن / Just now'
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`
-    if (diffDays === 1) return 'أمس / Yesterday'
-    if (diffDays < 30) return `منذ ${diffDays} يوم`
-    return new Date(timestamp).toLocaleDateString()
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 30) return `${diffDays} days ago`
+    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   return {

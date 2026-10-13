@@ -28,8 +28,8 @@
             <li><NuxtLink to="/" class="hover:text-romance-300 transition-colors">Home & Discover</NuxtLink></li>
             <li><NuxtLink to="/genres" class="hover:text-romance-300 transition-colors">Romance Genres</NuxtLink></li>
             <li><NuxtLink to="/popular" class="hover:text-romance-300 transition-colors">Most Popular</NuxtLink></li>
-            <li><NuxtLink to="/bookmarks" class="hover:text-romance-300 transition-colors">المفضلة (Bookmarks)</NuxtLink></li>
-            <li><NuxtLink to="/history" class="hover:text-romance-300 transition-colors">سجل القراءة (History)</NuxtLink></li>
+            <li><NuxtLink to="/bookmarks" class="hover:text-romance-300 transition-colors">Bookmarks</NuxtLink></li>
+            <li><NuxtLink to="/history" class="hover:text-romance-300 transition-colors">Reading History</NuxtLink></li>
           </ul>
         </div>
 

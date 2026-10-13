@@ -35,7 +35,7 @@
             ? 'bg-romance-600 text-white opacity-100'
             : 'bg-night-950/80 text-night-300 hover:text-white hover:bg-romance-600/80 opacity-0 group-hover:opacity-100'
         ]"
-        :title="isBookmarked(manga.id || manga.slug) ? 'إزالة من المفضلة' : 'حفظ في المفضلة'"
+        :title="isBookmarked(manga.id || manga.slug) ? 'Remove from Bookmarks' : 'Save to Bookmarks'"
       >
         <Bookmark :class="['w-3 h-3', isBookmarked(manga.id || manga.slug) ? 'fill-white' : '']" />
       </button>

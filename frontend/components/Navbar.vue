@@ -67,7 +67,7 @@
             to="/bookmarks"
             class="px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1.5 text-xs font-medium relative group"
             active-class="text-romance-400 border-romance-500/50 bg-night-800"
-            title="المفضلة / Bookmarks"
+            title="My Bookmarks"
           >
             <Bookmark class="w-4 h-4 text-romance-400 group-hover:scale-110 transition-transform" />
             <span class="hidden sm:inline">Bookmarks</span>
@@ -84,10 +84,10 @@
             to="/history"
             class="px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1.5 text-xs font-medium relative group"
             active-class="text-romance-400 border-romance-500/50 bg-night-800"
-            title="سجل القراءة / History"
+            title="Reading History"
           >
             <History class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
-            <span class="hidden sm:inline">السجل</span>
+            <span class="hidden sm:inline">History</span>
             <span 
               v-if="history.length > 0"
               class="ml-1 px-1.5 py-0.2 rounded-full bg-night-800 text-romance-300 border border-romance-500/30 font-mono text-[10px] font-bold"
@@ -131,7 +131,7 @@
           >
             <span class="flex items-center space-x-2">
               <Bookmark class="w-4 h-4 text-romance-400" />
-              <span>المفضلة (Bookmarks)</span>
+              <span>Bookmarks</span>
             </span>
             <span v-if="bookmarks.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-romance-600 text-white font-mono font-bold">
               {{ bookmarks.length }}
@@ -145,7 +145,7 @@
           >
             <span class="flex items-center space-x-2">
               <History class="w-4 h-4 text-rose-400" />
-              <span>سجل القراءة (History)</span>
+              <span>Reading History</span>
             </span>
             <span v-if="history.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-night-800 border border-romance-500/30 text-romance-300 font-mono font-bold">
               {{ history.length }}
