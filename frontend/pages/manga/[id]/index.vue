@@ -200,6 +200,9 @@ onMounted(async () => {
   isLoading.value = true
   manga.value = await fetchManga(mangaId.value)
   isLoading.value = false
+  if (manga.value) {
+    navigateTo(`/webtoon/${manga.value.slug || manga.value.id}`, { replace: true })
+  }
 })
 
 const publishedChapters = computed(() => {

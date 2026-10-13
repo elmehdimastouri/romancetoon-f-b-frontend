@@ -1,16 +1,16 @@
 <template>
-  <div class="space-y-12">
+  <div class="space-y-8 sm:space-y-12">
     <!-- Hero Banner for Featured Romance (if any published) -->
     <HeroBanner v-if="featuredList.length > 0" :items="featuredList" />
 
-    <!-- Genre Filter Pills -->
-    <div v-if="mangas.length > 0" class="flex items-center space-x-2 overflow-x-auto pb-2 custom-scroll">
+    <!-- Genre Filter Pills (Edge-to-edge touch swiping on mobile) -->
+    <div v-if="mangas.length > 0" class="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar">
       <button 
         v-for="genre in filterGenres" 
         :key="genre"
         @click="selectedGenre = genre"
         :class="[
-          'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border',
+          'shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border',
           selectedGenre === genre
             ? 'bg-romance-600 border-romance-500 text-white shadow-glow-pink'
             : 'bg-night-900 border-night-800 text-night-300 hover:text-white hover:border-night-700'
@@ -21,19 +21,19 @@
     </div>
 
     <!-- Section: Latest Romance Releases -->
-    <section v-if="filteredMangas.length > 0" class="space-y-6">
-      <div class="flex items-center justify-between pb-4 border-b border-night-850">
+    <section v-if="filteredMangas.length > 0" class="space-y-4 sm:space-y-6">
+      <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-night-850">
         <div class="flex items-center space-x-2.5">
           <div class="w-2.5 h-6 rounded-full bg-gradient-to-b from-romance-500 to-rose-600"></div>
-          <h2 class="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide">
+          <h2 class="font-serif text-lg sm:text-2xl font-bold text-white tracking-wide">
             Latest Romance Releases
           </h2>
         </div>
         <span class="text-xs text-night-400 font-medium">{{ filteredMangas.length }} Titles</span>
       </div>
 
-      <!-- Manga Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
+      <!-- Manga Grid (Clean 2-col on mobile, proportional gap) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-6">
         <MangaCard 
           v-for="manga in filteredMangas" 
           :key="manga.id" 

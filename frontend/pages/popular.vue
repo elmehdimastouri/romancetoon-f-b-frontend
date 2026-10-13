@@ -30,7 +30,7 @@
     </div>
 
     <!-- Real Manga Cards Grid -->
-    <div v-else-if="sortedMangas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div v-else-if="sortedMangas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
       <MangaCard 
         v-for="manga in sortedMangas" 
         :key="manga.id" 

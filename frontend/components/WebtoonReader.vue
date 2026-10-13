@@ -12,32 +12,32 @@
     <!-- Floating Top Bar (Controls) -->
     <header 
       :class="[
-        'fixed top-0 left-0 right-0 z-40 glass-nav px-4 py-3 transition-transform duration-300 flex items-center justify-between',
+        'fixed top-0 left-0 right-0 z-40 glass-nav px-3 sm:px-4 py-2.5 sm:py-3 transition-transform duration-300 flex items-center justify-between',
         showControls ? 'translate-y-0' : '-translate-y-full'
       ]"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
         <NuxtLink 
           :to="`/webtoon/${manga.slug || manga.id}`" 
-          class="p-2 rounded-xl bg-night-850 hover:bg-night-800 text-night-300 hover:text-white transition-colors"
+          class="p-2 rounded-xl bg-night-850 hover:bg-night-800 text-night-300 hover:text-white transition-colors shrink-0"
           title="Back to Webtoon details"
         >
-          <ArrowLeft class="w-5 h-5" />
+          <ArrowLeft class="w-4 h-4 sm:w-5 sm:h-5" />
         </NuxtLink>
 
-        <div>
-          <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="text-xs text-night-400 hover:text-romance-400 truncate max-w-[180px] sm:max-w-md block">
+        <div class="min-w-0">
+          <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="text-[11px] sm:text-xs text-night-400 hover:text-romance-400 truncate max-w-[130px] sm:max-w-md block">
             {{ manga.title }}
           </NuxtLink>
-          <h2 class="text-sm sm:text-base font-semibold text-white truncate max-w-[200px] sm:max-w-md">
+          <h2 class="text-xs sm:text-base font-semibold text-white truncate max-w-[150px] sm:max-w-md">
             {{ currentChapter.title || `Chapter ${currentChapter.number}` }}
           </h2>
         </div>
       </div>
 
       <!-- Center / Right Top Controls -->
-      <div class="flex items-center space-x-2">
-        <!-- Width toggle dropdown/buttons -->
+      <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+        <!-- Width toggle dropdown/buttons (Desktop only) -->
         <div class="hidden md:flex items-center bg-night-900 rounded-xl p-1 border border-night-800 text-xs">
           <button 
             @click="readerWidth = 'max-w-[650px]'"
@@ -62,10 +62,10 @@
           </button>
         </div>
 
-        <!-- Fullscreen toggle button -->
+        <!-- Fullscreen toggle button (sm+ only) -->
         <button 
           @click="toggleFullscreen"
-          class="p-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white transition-colors"
+          class="hidden sm:inline-flex p-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white transition-colors"
           :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'"
         >
           <Minimize v-if="isFullscreen" class="w-4 h-4 text-night-300 hover:text-white" />
@@ -180,15 +180,15 @@
       </div>
 
       <!-- End of chapter section -->
-      <div class="mt-12 p-6 sm:p-10 rounded-2xl bg-night-900 border border-night-800 text-center space-y-5 mx-4" @click.stop>
-        <Heart class="w-8 h-8 text-romance-400 fill-romance-500/20 mx-auto animate-pulse" />
-        <h3 class="text-lg font-serif font-bold text-white">You've reached the end of Chapter {{ currentChapter.number }}</h3>
+      <div class="mt-8 sm:mt-12 p-5 sm:p-10 rounded-2xl bg-night-900 border border-night-800 text-center space-y-4 sm:space-y-5 mx-3 sm:mx-4" @click.stop>
+        <Heart class="w-7 h-7 sm:w-8 sm:h-8 text-romance-400 fill-romance-500/20 mx-auto animate-pulse" />
+        <h3 class="text-base sm:text-lg font-serif font-bold text-white">You've reached the end of Chapter {{ currentChapter.number }}</h3>
         <p class="text-xs text-night-400 max-w-md mx-auto">
           Loved this chapter? Support RomanceToon by leaving a bookmark or reading the next installment!
         </p>
 
-        <!-- Keyboard navigation tip -->
-        <div class="inline-flex items-center space-x-2 text-[11px] text-night-400 bg-night-950/60 px-3 py-1 rounded-lg border border-night-800">
+        <!-- Keyboard navigation tip (Desktop only) -->
+        <div class="hidden sm:inline-flex items-center space-x-2 text-[11px] text-night-400 bg-night-950/60 px-3 py-1 rounded-lg border border-night-800">
           <span>Keyboard shortcut: Press</span>
           <kbd class="px-1.5 py-0.5 rounded bg-night-800 border border-night-700 font-mono text-[10px] text-romance-300">←</kbd>
           <span>for Previous or</span>
@@ -196,29 +196,29 @@
           <span>for Next Chapter</span>
         </div>
 
-        <div class="flex items-center justify-center gap-3 pt-2">
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-2">
           <NuxtLink 
             v-if="prevChapter" 
             :to="`/webtoon/${manga.slug || manga.id}/chapter-${prevChapter.number}`"
-            class="px-5 py-2.5 rounded-xl bg-night-850 hover:bg-night-800 border border-night-700 text-night-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+            class="px-4 sm:px-5 py-2.5 rounded-xl bg-night-850 hover:bg-night-800 border border-night-700 text-night-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors"
           >
             <ChevronLeft class="w-4 h-4" />
-            <span>Prev Chapter (←)</span>
+            <span>Prev Chapter</span>
           </NuxtLink>
 
           <NuxtLink 
             v-if="nextChapter" 
             :to="`/webtoon/${manga.slug || manga.id}/chapter-${nextChapter.number}`"
-            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all"
+            class="px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all"
           >
-            <span>Next Chapter (→)</span>
+            <span>Next Chapter</span>
             <ChevronRight class="w-4 h-4" />
           </NuxtLink>
 
           <NuxtLink 
             v-else
             :to="`/webtoon/${manga.slug || manga.id}`"
-            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all"
+            class="px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all"
           >
             <BookOpen class="w-4 h-4" />
             <span>Webtoon Details</span>
@@ -230,7 +230,7 @@
     <!-- Floating Bottom Navigation Bar -->
     <footer 
       :class="[
-        'fixed bottom-0 left-0 right-0 z-40 glass-nav px-4 py-3 transition-transform duration-300 flex items-center justify-between',
+        'fixed bottom-0 left-0 right-0 z-40 glass-nav px-3 sm:px-4 py-2.5 sm:py-3 transition-transform duration-300 flex items-center justify-between',
         showControls ? 'translate-y-0' : 'translate-y-full'
       ]"
     >
@@ -238,19 +238,19 @@
       <NuxtLink 
         v-if="prevChapter"
         :to="`/webtoon/${manga.slug || manga.id}/chapter-${prevChapter.number}`"
-        class="px-4 py-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white text-xs font-medium flex items-center space-x-1.5 transition-colors"
-        title="Previous Chapter (Press ← key)"
+        class="px-3 sm:px-4 py-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white text-xs font-medium flex items-center space-x-1.5 transition-colors"
+        title="Previous Chapter"
       >
         <ChevronLeft class="w-4 h-4" />
         <span class="hidden sm:inline">Ch. {{ prevChapter.number }}</span>
       </NuxtLink>
-      <div v-else class="w-20"></div>
+      <div v-else class="w-10 sm:w-20"></div>
 
       <!-- Quick chapter selector button -->
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 sm:space-x-3">
         <button 
           @click="showChapterMenu = !showChapterMenu"
-          class="px-4 py-2 rounded-xl bg-night-900 border border-night-800 text-white font-medium text-xs hover:border-romance-500/60 transition-colors flex items-center space-x-2"
+          class="px-3 sm:px-4 py-2 rounded-xl bg-night-900 border border-night-800 text-white font-medium text-xs hover:border-romance-500/60 transition-colors flex items-center space-x-1.5 sm:space-x-2"
         >
           <span>Chapter {{ currentChapter.number }}</span>
           <ChevronUp class="w-3.5 h-3.5 text-romance-400" />
@@ -260,7 +260,7 @@
           {{ Math.round(scrollProgress) }}%
         </span>
 
-        <!-- Keyboard arrows indicator pill -->
+        <!-- Keyboard arrows indicator pill (Desktop only) -->
         <span class="hidden lg:inline text-[10px] text-night-500 font-mono">
           [← / → keys]
         </span>
@@ -270,13 +270,13 @@
       <NuxtLink 
         v-if="nextChapter"
         :to="`/webtoon/${manga.slug || manga.id}/chapter-${nextChapter.number}`"
-        class="px-4 py-2 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-medium shadow-glow-pink flex items-center space-x-1.5 transition-colors"
-        title="Next Chapter (Press → key)"
+        class="px-3 sm:px-4 py-2 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-medium shadow-glow-pink flex items-center space-x-1.5 transition-colors"
+        title="Next Chapter"
       >
         <span class="hidden sm:inline">Ch. {{ nextChapter.number }}</span>
         <ChevronRight class="w-4 h-4" />
       </NuxtLink>
-      <div v-else class="w-20"></div>
+      <div v-else class="w-10 sm:w-20"></div>
     </footer>
 
     <!-- Floating Scroll To Top Button -->
@@ -291,25 +291,25 @@
       <button 
         v-if="showScrollTop"
         @click="scrollToTop"
-        class="fixed bottom-20 right-6 z-40 p-3.5 rounded-full bg-gradient-to-tr from-romance-600 to-rose-500 text-white shadow-lg shadow-romance-500/25 hover:shadow-romance-500/40 hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 group backdrop-blur-md"
+        class="fixed bottom-20 right-4 sm:right-6 z-40 p-3 sm:p-3.5 rounded-full bg-gradient-to-tr from-romance-600 to-rose-500 text-white shadow-lg shadow-romance-500/25 hover:shadow-romance-500/40 hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 group backdrop-blur-md"
         aria-label="Scroll to top"
         title="Scroll to top"
       >
-        <ChevronUp class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+        <ChevronUp class="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-y-0.5 transition-transform" />
       </button>
     </transition>
 
-    <!-- Chapter Selector Modal / Drawer -->
+    <!-- Chapter Selector Bottom Sheet / Modal -->
     <div 
       v-if="showChapterMenu" 
-      class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       @click.self="showChapterMenu = false"
     >
-      <div class="w-full max-w-md max-h-[80vh] rounded-3xl glass-panel p-6 flex flex-col space-y-4 shadow-2xl border border-white/10">
+      <div class="w-full sm:max-w-md max-h-[85vh] rounded-t-3xl sm:rounded-3xl glass-panel p-5 sm:p-6 flex flex-col space-y-4 shadow-2xl border border-white/10 animate-fade-in">
         <div class="flex items-center justify-between pb-3 border-b border-night-800">
           <div>
-            <h3 class="font-serif font-bold text-lg text-white">Select Chapter</h3>
-            <p class="text-xs text-night-400">{{ manga.title }}</p>
+            <h3 class="font-serif font-bold text-base sm:text-lg text-white">Select Chapter</h3>
+            <p class="text-xs text-night-400 truncate max-w-[240px]">{{ manga.title }}</p>
           </div>
           <button @click="showChapterMenu = false" class="p-2 rounded-lg text-night-400 hover:text-white hover:bg-night-850">
             <X class="w-5 h-5" />

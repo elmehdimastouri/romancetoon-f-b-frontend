@@ -54,3 +54,18 @@
   margin: 0;
   padding: 0;
 }
+
+/* Hide scrollbar utility for clean mobile horizontal swipe */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove tap highlight on mobile browsers */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

@@ -1,12 +1,12 @@
 <template>
-  <footer class="mt-24 border-t border-night-850 bg-night-950 py-12 text-night-400">
+  <footer class="mt-12 sm:mt-24 border-t border-night-850 bg-night-950 py-8 sm:py-12 text-night-400">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
         
         <!-- Brand Info -->
-        <div class="md:col-span-2 space-y-4">
+        <div class="col-span-2 space-y-3 sm:space-y-4">
           <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-romance-600 to-rose-400 flex items-center justify-center">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-romance-600 to-rose-400 flex items-center justify-center shadow-glow-pink">
               <Heart class="w-4 h-4 text-white fill-white" />
             </div>
             <span class="font-serif text-xl font-bold text-white">
@@ -22,7 +22,7 @@
         </div>
 
         <!-- Quick Links -->
-        <div class="space-y-3">
+        <div class="space-y-2.5 sm:space-y-3">
           <h4 class="text-xs font-semibold text-night-200 uppercase tracking-wider">Navigation</h4>
           <ul class="space-y-2 text-xs">
             <li><NuxtLink to="/" class="hover:text-romance-300 transition-colors">Home & Discover</NuxtLink></li>
@@ -34,7 +34,7 @@
         </div>
 
         <!-- Romance Categories -->
-        <div class="space-y-3">
+        <div class="space-y-2.5 sm:space-y-3">
           <h4 class="text-xs font-semibold text-night-200 uppercase tracking-wider">Top Genres</h4>
           <ul class="space-y-2 text-xs">
             <li><NuxtLink to="/genres/historical/" class="hover:text-romance-300 transition-colors">Historical</NuxtLink></li>

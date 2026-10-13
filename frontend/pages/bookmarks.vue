@@ -68,11 +68,11 @@
     </div>
 
     <!-- Bookmarks Grid -->
-    <div v-if="filteredBookmarks.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div v-if="filteredBookmarks.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
       <div 
         v-for="item in filteredBookmarks" 
         :key="item.id"
-        class="group flex flex-col rounded-2xl bg-night-900 border border-night-800/80 hover:border-romance-500/50 overflow-hidden transition-all duration-300 hover:shadow-glow-pink relative"
+        class="group flex flex-col rounded-xl sm:rounded-2xl bg-night-900 border border-night-800/80 hover:border-romance-500/50 overflow-hidden transition-all duration-300 hover:shadow-glow-pink relative"
       >
         <!-- Cover image container -->
         <div class="relative aspect-[3/4] overflow-hidden bg-night-950">
@@ -88,14 +88,14 @@
           <!-- Remove from bookmark quick button -->
           <button 
             @click.stop.prevent="removeBookmark(item.id)"
-            class="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-night-950/80 hover:bg-rose-600 backdrop-blur-md text-night-300 hover:text-white transition-all shadow-md group/btn"
+            class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 p-1.5 rounded-lg bg-night-950/80 hover:bg-rose-600 backdrop-blur-md text-night-300 hover:text-white transition-all shadow-md group/btn z-10"
             title="Remove from Bookmarks"
           >
             <Trash2 class="w-3.5 h-3.5" />
           </button>
 
           <!-- Rating -->
-          <div v-if="item.rating" class="absolute top-2.5 left-2.5 flex items-center space-x-1 px-2 py-0.5 rounded-md bg-night-950/80 backdrop-blur-md border border-white/10 text-amber-400 text-xs font-semibold">
+          <div v-if="item.rating" class="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 flex items-center space-x-1 px-1.5 sm:px-2 py-0.5 rounded-md bg-night-950/80 backdrop-blur-md border border-white/10 text-amber-400 text-[10px] sm:text-xs font-semibold z-10 pointer-events-none">
             <Star class="w-3 h-3 fill-amber-400" />
             <span>{{ item.rating }}</span>
           </div>
@@ -103,28 +103,28 @@
           <!-- Last read indicator if exists -->
           <div 
             v-if="getLastRead(item)" 
-            class="absolute bottom-2.5 left-2.5 right-2.5 px-2 py-1 rounded-lg bg-night-950/90 backdrop-blur-md border border-romance-500/30 flex items-center justify-between text-[11px]"
+            class="absolute bottom-2 left-2 right-2 sm:bottom-2.5 sm:left-2.5 sm:right-2.5 px-2 py-0.5 sm:py-1 rounded-lg bg-night-950/90 backdrop-blur-md border border-romance-500/30 flex items-center justify-between text-[10px] sm:text-[11px] z-10"
           >
-            <span class="text-romance-300 font-medium">Progress:</span>
-            <span class="text-white font-bold font-mono">Ch. {{ getLastRead(item)?.chapterNumber }}</span>
+            <span class="text-romance-300 font-medium">Ch. {{ getLastRead(item)?.chapterNumber }}</span>
+            <span class="text-white font-bold font-mono text-[9px] sm:text-[10px]">Read</span>
           </div>
         </div>
 
         <!-- Details -->
-        <div class="p-3.5 flex flex-col flex-1 justify-between gap-3">
+        <div class="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between gap-2 sm:gap-3">
           <div>
             <NuxtLink :to="`/webtoon/${item.slug || item.id}`" class="block">
-              <h3 class="font-serif font-bold text-sm sm:text-base text-night-100 group-hover:text-romance-400 transition-colors line-clamp-1">
+              <h3 class="font-serif font-bold text-xs sm:text-sm md:text-base text-night-100 group-hover:text-romance-400 transition-colors line-clamp-2 leading-tight">
                 {{ item.title }}
               </h3>
             </NuxtLink>
-            <p v-if="item.genres && item.genres.length" class="text-[11px] text-night-400 line-clamp-1 mt-0.5">
+            <p v-if="item.genres && item.genres.length" class="text-[10px] sm:text-[11px] text-night-400 line-clamp-1 mt-1">
               {{ item.genres.slice(0, 2).join(' • ') }}
             </p>
           </div>
 
           <!-- Action button: Continue or Read First -->
-          <div class="pt-2 border-t border-night-800/60">
+          <div class="pt-1.5 sm:pt-2 border-t border-night-800/60">
             <NuxtLink 
               v-if="getLastRead(item)"
               :to="`/webtoon/${item.slug || item.id}/chapter-${getLastRead(item)?.chapterNumber}`"

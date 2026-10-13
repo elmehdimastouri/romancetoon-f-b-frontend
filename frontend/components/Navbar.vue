@@ -4,13 +4,13 @@
       <div class="flex items-center justify-between h-16 sm:h-20">
         
         <!-- Logo -->
-        <NuxtLink to="/" class="flex items-center space-x-3 group">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-romance-600 to-rose-400 flex items-center justify-center shadow-glow-pink transition-transform group-hover:scale-105">
-            <Heart class="w-5 h-5 text-white fill-white animate-pulse" />
+        <NuxtLink to="/" class="flex items-center space-x-2.5 sm:space-x-3 group">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-romance-600 to-rose-400 flex items-center justify-center shadow-glow-pink transition-transform group-hover:scale-105 shrink-0">
+            <Heart class="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white animate-pulse" />
           </div>
           <div>
             <div class="flex items-center space-x-1">
-              <span class="font-serif text-2xl font-bold tracking-tight text-white group-hover:text-romance-300 transition-colors">
+              <span class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-romance-300 transition-colors">
                 Romance<span class="text-romance-400">Toon</span>
               </span>
             </div>
@@ -48,9 +48,19 @@
           </NuxtLink>
         </nav>
 
-        <!-- Right Action Items (Search + Bookmarks + History) -->
-        <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Right Action Items (Search + Bookmarks + History + Mobile menu) -->
+        <div class="flex items-center space-x-1.5 sm:space-x-3">
           
+          <!-- Mobile Quick Search Toggle (Screen < sm) -->
+          <button 
+            @click="toggleMobileSearch"
+            class="sm:hidden p-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-white transition-colors"
+            title="Search Webtoons"
+            aria-label="Toggle Search"
+          >
+            <Search class="w-4 h-4 text-romance-400" />
+          </button>
+
           <!-- Desktop Search input with Live Autocomplete Dropdown -->
           <div ref="searchContainer" class="relative hidden sm:block w-44 md:w-60 lg:w-72">
             <div class="relative">
@@ -75,7 +85,7 @@
               </button>
             </div>
 
-            <!-- Instant Live Autocomplete Dropdown -->
+            <!-- Instant Live Autocomplete Dropdown (Desktop) -->
             <transition name="dropdown">
               <div 
                 v-if="showDropdown"
@@ -158,16 +168,16 @@
             <span class="hidden sm:inline">Bookmarks</span>
             <span 
               v-if="bookmarks.length > 0"
-              class="ml-1 px-1.5 py-0.2 rounded-full bg-romance-600 text-white font-mono text-[10px] font-bold"
+              class="ml-0.5 sm:ml-1 px-1.5 py-0.2 rounded-full bg-romance-600 text-white font-mono text-[10px] font-bold"
             >
               {{ bookmarks.length }}
             </span>
           </NuxtLink>
 
-          <!-- History button -->
+          <!-- History button (Visible on sm+) -->
           <NuxtLink 
             to="/history"
-            class="px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1.5 text-xs font-medium relative group"
+            class="hidden sm:flex px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all items-center space-x-1.5 text-xs font-medium relative group"
             active-class="text-romance-400 border-romance-500/50 bg-night-800"
             title="Reading History"
           >
@@ -183,8 +193,9 @@
 
           <!-- Mobile menu toggle -->
           <button 
-            @click="mobileMenuOpen = !mobileMenuOpen"
-            class="md:hidden p-2 rounded-xl bg-night-850 text-night-200 hover:text-white"
+            @click="toggleMobileMenu"
+            class="md:hidden p-2 rounded-xl bg-night-850 text-night-200 hover:text-white transition-colors"
+            aria-label="Toggle Navigation Menu"
           >
             <Menu v-if="!mobileMenuOpen" class="w-5 h-5" />
             <X v-else class="w-5 h-5 text-romance-400" />
@@ -193,111 +204,186 @@
 
       </div>
 
-      <!-- Mobile dropdown menu -->
-      <div v-if="mobileMenuOpen" class="md:hidden py-4 border-t border-night-800 space-y-3">
-        <!-- Mobile Search Input with Instant Results -->
-        <div class="relative px-2">
+      <!-- Mobile Search Slide-Down Bar (Screen < sm) -->
+      <transition name="dropdown">
+        <div v-if="mobileSearchOpen" class="sm:hidden pb-3 pt-1 border-t border-night-800/80">
           <div class="relative">
             <input 
+              ref="mobileSearchInput"
               v-model="searchQuery"
               @focus="loadCatalogIfNeeded"
               @keyup.enter="handleSearch"
               type="text" 
-              placeholder="Search romance titles..." 
-              class="w-full bg-night-900 border border-night-800 rounded-xl py-2 pl-9 pr-8 text-sm text-night-100 placeholder-night-400 focus:outline-none focus:border-romance-500"
+              placeholder="Search romance webtoons..." 
+              class="w-full bg-night-900 border border-night-800 rounded-xl py-2 pl-9 pr-9 text-xs text-night-100 placeholder-night-400 focus:outline-none focus:border-romance-500/80"
             />
             <Search class="w-4 h-4 text-night-400 absolute left-3 top-2.5 pointer-events-none" />
             <button 
               v-if="searchQuery" 
               @click="searchQuery = ''"
-              class="absolute right-2.5 top-2.5 text-night-400 hover:text-white"
+              class="absolute right-2.5 top-2.5 text-night-400 hover:text-white p-0.5"
               type="button"
+              title="Clear"
             >
-              <X class="w-4 h-4" />
+              <X class="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <!-- Mobile Autocomplete Suggestions List -->
-          <div v-if="searchQuery.trim()" class="mt-2 bg-night-900/95 border border-night-800 rounded-xl p-2 space-y-1">
-            <div v-if="searchResults.length > 0">
+          <!-- Mobile Autocomplete Suggestions -->
+          <div v-if="searchQuery.trim()" class="mt-2 bg-night-900/98 backdrop-blur-xl border border-night-800 rounded-2xl p-2 space-y-1 shadow-2xl">
+            <div v-if="searchResults.length > 0" class="space-y-1">
               <NuxtLink 
                 v-for="manga in searchResults.slice(0, 4)" 
                 :key="manga.id"
                 :to="`/webtoon/${manga.slug || manga.id}`"
-                @click="closeSearch(); mobileMenuOpen = false"
-                class="flex items-center space-x-3 p-2 rounded-lg hover:bg-night-800 transition-colors"
+                @click="closeMobileSearch"
+                class="flex items-center space-x-3 p-2 rounded-xl hover:bg-night-800 transition-colors"
               >
-                <img :src="manga.cover" :alt="manga.title" class="w-8 h-11 object-cover rounded shrink-0" />
+                <img :src="manga.cover" :alt="manga.title" class="w-9 h-12 object-cover rounded-lg shrink-0 border border-white/5" />
                 <div class="flex-1 min-w-0">
                   <div class="text-xs font-semibold text-white truncate">{{ manga.title }}</div>
                   <div class="text-[10px] text-night-400 flex items-center space-x-1.5 mt-0.5">
-                    <span class="text-amber-400">★ {{ Number(manga.rating || 5.0).toFixed(1) }}</span>
-                    <span>• {{ manga.status }}</span>
+                    <span class="text-amber-400 font-medium">★ {{ Number(manga.rating || 5.0).toFixed(1) }}</span>
+                    <span v-if="manga.status">• {{ manga.status }}</span>
+                    <span v-if="manga.genres && manga.genres.length" class="truncate">• {{ manga.genres[0] }}</span>
                   </div>
                 </div>
+                <ChevronRight class="w-3.5 h-3.5 text-night-500 shrink-0" />
               </NuxtLink>
 
               <button 
                 @click="handleSearch"
-                class="w-full pt-2 border-t border-night-800 text-xs font-medium text-romance-400 text-center py-1.5 block"
+                class="w-full pt-2 border-t border-night-800 text-xs font-semibold text-romance-400 text-center py-1.5 block hover:text-romance-300 transition-colors"
               >
                 View all results for "{{ searchQuery }}" →
               </button>
             </div>
             <div v-else class="text-xs text-night-400 text-center py-3">
-              No titles found. Press Enter to search.
+              No matching titles found. Press Enter to search all.
             </div>
           </div>
         </div>
+      </transition>
 
-        <NuxtLink to="/" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">Discover</NuxtLink>
-        <NuxtLink to="/genres" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">All Genres</NuxtLink>
-        <NuxtLink to="/popular" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">Most Loved</NuxtLink>
-        
-        <div class="pt-2 border-t border-night-850/80 space-y-1">
+      <!-- Mobile Dropdown Navigation Menu -->
+      <transition name="dropdown">
+        <div v-if="mobileMenuOpen" class="md:hidden py-4 border-t border-night-800 space-y-2">
           <NuxtLink 
-            to="/bookmarks" 
+            to="/" 
             @click="mobileMenuOpen = false" 
-            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white"
+            class="flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-night-200 hover:bg-night-850 hover:text-white transition-colors"
+            active-class="bg-night-850 text-romance-400 font-semibold"
           >
-            <span class="flex items-center space-x-2">
-              <Bookmark class="w-4 h-4 text-romance-400" />
-              <span>Bookmarks</span>
-            </span>
-            <span v-if="bookmarks.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-romance-600 text-white font-mono font-bold">
-              {{ bookmarks.length }}
-            </span>
+            <Compass class="w-4 h-4 text-romance-400" />
+            <span>Discover Romance</span>
           </NuxtLink>
 
           <NuxtLink 
-            to="/history" 
+            to="/genres" 
             @click="mobileMenuOpen = false" 
-            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white"
+            class="flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-night-200 hover:bg-night-850 hover:text-white transition-colors"
+            active-class="bg-night-850 text-romance-400 font-semibold"
           >
-            <span class="flex items-center space-x-2">
-              <History class="w-4 h-4 text-rose-400" />
-              <span>Reading History</span>
-            </span>
-            <span v-if="history.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-night-800 border border-romance-500/30 text-romance-300 font-mono font-bold">
-              {{ history.length }}
-            </span>
+            <Sparkles class="w-4 h-4 text-romance-400" />
+            <span>Romance Genres</span>
           </NuxtLink>
+
+          <NuxtLink 
+            to="/popular" 
+            @click="mobileMenuOpen = false" 
+            class="flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-night-200 hover:bg-night-850 hover:text-white transition-colors"
+            active-class="bg-night-850 text-romance-400 font-semibold"
+          >
+            <Flame class="w-4 h-4 text-romance-400" />
+            <span>Most Loved Titles</span>
+          </NuxtLink>
+          
+          <div class="pt-2 border-t border-night-850/80 space-y-1">
+            <NuxtLink 
+              to="/bookmarks" 
+              @click="mobileMenuOpen = false" 
+              class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-night-200 hover:bg-night-850 hover:text-white transition-colors"
+              active-class="bg-night-850 text-romance-400 font-semibold"
+            >
+              <span class="flex items-center space-x-2.5">
+                <Bookmark class="w-4 h-4 text-romance-400" />
+                <span>My Bookmarks</span>
+              </span>
+              <span v-if="bookmarks.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-romance-600 text-white font-mono font-bold">
+                {{ bookmarks.length }}
+              </span>
+            </NuxtLink>
+
+            <NuxtLink 
+              to="/history" 
+              @click="mobileMenuOpen = false" 
+              class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-night-200 hover:bg-night-850 hover:text-white transition-colors"
+              active-class="bg-night-850 text-rose-400 font-semibold"
+            >
+              <span class="flex items-center space-x-2.5">
+                <History class="w-4 h-4 text-rose-400" />
+                <span>Reading History</span>
+              </span>
+              <span v-if="history.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-night-800 border border-romance-500/30 text-romance-300 font-mono font-bold">
+                {{ history.length }}
+              </span>
+            </NuxtLink>
+          </div>
+
+          <!-- Quick Top Genre Shortcuts for Instant Discovery -->
+          <div class="pt-3 border-t border-night-850/80">
+            <div class="text-[11px] font-semibold text-night-400 uppercase tracking-wider px-3 mb-2">
+              Popular Tropes
+            </div>
+            <div class="flex flex-wrap gap-1.5 px-3">
+              <NuxtLink 
+                to="/genres/drama/" 
+                @click="mobileMenuOpen = false"
+                class="px-2.5 py-1 rounded-lg bg-night-900 border border-night-800 text-[11px] text-night-300 hover:text-white"
+              >
+                Drama
+              </NuxtLink>
+              <NuxtLink 
+                to="/genres/fantasy/" 
+                @click="mobileMenuOpen = false"
+                class="px-2.5 py-1 rounded-lg bg-night-900 border border-night-800 text-[11px] text-night-300 hover:text-white"
+              >
+                Fantasy
+              </NuxtLink>
+              <NuxtLink 
+                to="/genres/historical/" 
+                @click="mobileMenuOpen = false"
+                class="px-2.5 py-1 rounded-lg bg-night-900 border border-night-800 text-[11px] text-night-300 hover:text-white"
+              >
+                Historical
+              </NuxtLink>
+              <NuxtLink 
+                to="/genres/romance/" 
+                @click="mobileMenuOpen = false"
+                class="px-2.5 py-1 rounded-lg bg-night-900 border border-night-800 text-[11px] text-night-300 hover:text-white"
+              >
+                Romance
+              </NuxtLink>
+            </div>
+          </div>
         </div>
-      </div>
+      </transition>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Heart, Compass, Sparkles, Flame, Search, Bookmark, History, Menu, X, Star, ChevronRight, ArrowRight } from '@lucide/vue'
 import { useReadingTracker } from '~/composables/useReadingTracker'
 import { useRomanceApi } from '~/composables/useApi'
 
 const searchQuery = ref('')
 const mobileMenuOpen = ref(false)
+const mobileSearchOpen = ref(false)
 const isFocused = ref(false)
 const searchContainer = ref<HTMLElement | null>(null)
+const mobileSearchInput = ref<HTMLInputElement | null>(null)
 
 const { bookmarks, history } = useReadingTracker()
 const { fetchMangas } = useRomanceApi()
@@ -315,6 +401,29 @@ const loadCatalogIfNeeded = async () => {
     } finally {
       isLoadingCatalog.value = false
     }
+  }
+}
+
+const toggleMobileSearch = () => {
+  mobileSearchOpen.value = !mobileSearchOpen.value
+  if (mobileSearchOpen.value) {
+    mobileMenuOpen.value = false
+    loadCatalogIfNeeded()
+    nextTick(() => {
+      mobileSearchInput.value?.focus()
+    })
+  }
+}
+
+const closeMobileSearch = () => {
+  mobileSearchOpen.value = false
+  searchQuery.value = ''
+}
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+  if (mobileMenuOpen.value) {
+    mobileSearchOpen.value = false
   }
 }
 
@@ -344,6 +453,7 @@ const handleSearch = () => {
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim()
     closeSearch()
+    closeMobileSearch()
     mobileMenuOpen.value = false
     navigateTo(`/search?q=${encodeURIComponent(q)}`)
   }

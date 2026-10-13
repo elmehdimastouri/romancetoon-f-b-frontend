@@ -23,132 +23,16 @@
     </div>
 
     <!-- Main Content Container -->
-    <div class="relative z-10 p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 min-h-[460px]">
+    <div class="relative z-10 p-4 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-5 sm:gap-8 lg:gap-12 min-h-0 sm:min-h-[460px]">
       
-      <!-- Left Column: Series Info & Action Buttons -->
-      <div class="w-full lg:max-w-2xl space-y-4 text-center lg:text-left">
-        
-        <!-- Header Pill & Badges -->
-        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5">
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-gradient-to-r from-romance-600/30 to-rose-500/20 border border-romance-500/40 text-romance-300 text-xs font-semibold backdrop-blur-md shadow-sm">
-            <Sparkles class="w-3.5 h-3.5 text-romance-400 animate-pulse" />
-            <span>Spotlight Romance of the Week</span>
-          </div>
-
-          <span 
-            v-if="currentManga.badge"
-            :class="[
-              'px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase backdrop-blur-md border shadow-sm',
-              currentManga.badge === 'HOT' ? 'bg-rose-600/30 border-rose-500/50 text-rose-300' :
-              currentManga.badge === 'TRENDING' ? 'bg-amber-600/30 border-amber-500/50 text-amber-300' :
-              'bg-violet-600/30 border-violet-500/50 text-violet-300'
-            ]"
-          >
-            {{ currentManga.badge }}
-          </span>
-
-          <span 
-            v-if="currentManga.status"
-            class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-          >
-            {{ currentManga.status }}
-          </span>
-        </div>
-
-        <!-- Title -->
-        <div class="space-y-1">
-          <NuxtLink :to="`/webtoon/${currentManga.slug || currentManga.id}`" class="inline-block group-hover:text-romance-300 transition-colors">
-            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-white leading-[1.15] drop-shadow-md">
-              {{ currentManga.title }}
-            </h1>
-          </NuxtLink>
-
-          <p v-if="currentManga.alternativeTitles && currentManga.alternativeTitles.length" class="text-xs text-night-400 italic line-clamp-1">
-            Also known as: {{ currentManga.alternativeTitles.join(' • ') }}
-          </p>
-        </div>
-
-        <!-- Live Metrics & Genre Tags -->
-        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1 text-xs">
-          <!-- Star Rating -->
-          <div class="flex items-center space-x-1 text-amber-400 font-bold bg-night-900/90 px-3 py-1 rounded-xl border border-night-800 shadow-sm">
-            <Star class="w-3.5 h-3.5 fill-amber-400" />
-            <span>{{ Number(currentManga.rating || 5.0).toFixed(1) }}</span>
-            <span class="text-night-400 font-normal text-[11px]">({{ currentManga.ratingCount || '1' }})</span>
-          </div>
-
-          <!-- Total Views -->
-          <div class="flex items-center space-x-1 text-night-300 font-medium bg-night-900/90 px-3 py-1 rounded-xl border border-night-800 shadow-sm">
-            <Eye class="w-3.5 h-3.5 text-romance-400" />
-            <span>{{ formatViews(currentManga.views) }} views</span>
-          </div>
-
-          <!-- Public Bookmarks -->
-          <div class="flex items-center space-x-1 text-night-300 font-medium bg-night-900/90 px-3 py-1 rounded-xl border border-night-800 shadow-sm">
-            <Bookmark class="w-3.5 h-3.5 text-romance-400 fill-romance-400/30" />
-            <span>{{ formatViews(currentManga.bookmarks) }} saves</span>
-          </div>
-
-          <!-- Genre Tags -->
-          <span 
-            v-for="genre in (currentManga.genres || []).slice(0, 3)" 
-            :key="genre"
-            class="px-2.5 py-1 rounded-xl bg-night-900/80 border border-night-800 text-night-300 hover:border-romance-500/40 transition-colors"
-          >
-            {{ genre }}
-          </span>
-        </div>
-
-        <!-- Synopsis Excerpt -->
-        <p class="text-night-300 text-sm sm:text-base line-clamp-3 leading-relaxed max-w-xl mx-auto lg:mx-0">
-          {{ currentManga.synopsis }}
-        </p>
-
-        <!-- Call-to-Action Buttons -->
-        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-3">
-          <!-- Read / Continue Button -->
-          <NuxtLink 
-            :to="readTargetUrl"
-            class="px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-bold text-xs sm:text-sm shadow-glow-pink flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <BookOpen class="w-4 h-4" />
-            <span>{{ userHistory ? `Continue (Ch. ${userHistory.chapterNumber})` : 'Start Reading (Ch. 1)' }}</span>
-          </NuxtLink>
-
-          <!-- Quick Bookmark Button -->
-          <button 
-            @click="toggleBookmark(currentManga)"
-            :class="[
-              'px-4 py-3 rounded-xl border font-semibold text-xs sm:text-sm flex items-center space-x-2 transition-all',
-              isBookmarked(currentManga.id || currentManga.slug)
-                ? 'bg-romance-600/25 border-romance-500 text-romance-300 shadow-sm'
-                : 'bg-night-900/90 hover:bg-night-850 border-night-800 text-night-200 hover:text-white'
-            ]"
-            :title="isBookmarked(currentManga.id || currentManga.slug) ? 'Remove from Bookmarks' : 'Save to Bookmarks'"
-          >
-            <Bookmark :class="['w-4 h-4', isBookmarked(currentManga.id || currentManga.slug) ? 'fill-romance-400 text-romance-400' : 'text-night-400']" />
-            <span>{{ isBookmarked(currentManga.id || currentManga.slug) ? 'In Bookmarks' : 'Bookmark' }}</span>
-          </button>
-
-          <!-- View Details Button -->
-          <NuxtLink 
-            :to="`/webtoon/${currentManga.slug || currentManga.id}`"
-            class="px-4 py-3 rounded-xl bg-night-900/90 hover:bg-night-850 text-night-200 hover:text-white border border-night-800 font-medium text-xs sm:text-sm flex items-center space-x-2 transition-colors"
-          >
-            <Info class="w-4 h-4 text-romance-400" />
-            <span>Details</span>
-          </NuxtLink>
-        </div>
-      </div>
-
-      <!-- Right Column: 3D Floating Portrait Poster Cover -->
-      <div class="relative shrink-0">
+      <!-- Floating Portrait Poster Cover (Order 1 on mobile, Order 2 on desktop) -->
+      <div class="relative shrink-0 order-1 lg:order-2 mt-1 sm:mt-0">
         <NuxtLink :to="`/webtoon/${currentManga.slug || currentManga.id}`" class="block group/cover relative">
           <!-- Ambient Glow behind the cover card -->
-          <div class="absolute -inset-2 bg-gradient-to-tr from-romance-600/40 via-rose-500/20 to-purple-600/30 rounded-3xl blur-xl opacity-75 group-hover/cover:opacity-100 transition-opacity duration-500"></div>
+          <div class="absolute -inset-2 bg-gradient-to-tr from-romance-600/40 via-rose-500/20 to-purple-600/30 rounded-2xl sm:rounded-3xl blur-xl opacity-75 group-hover/cover:opacity-100 transition-opacity duration-500"></div>
 
           <!-- Cover Image Frame with 3D feel -->
-          <div class="relative w-48 sm:w-56 md:w-64 aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl bg-night-900 transform transition-transform duration-500 group-hover/cover:scale-[1.03] group-hover/cover:-rotate-1">
+          <div class="relative w-32 sm:w-52 md:w-56 lg:w-64 aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl bg-night-900 transform transition-transform duration-500 group-hover/cover:scale-[1.03] group-hover/cover:-rotate-1">
             <img 
               :src="currentManga.cover" 
               :alt="currentManga.title" 
@@ -159,14 +43,131 @@
             <div class="absolute inset-0 bg-gradient-to-t from-night-950 via-transparent to-transparent opacity-60"></div>
 
             <!-- Chapter pill on bottom of cover -->
-            <div class="absolute bottom-3 inset-x-3 flex items-center justify-between px-3 py-1.5 rounded-xl bg-night-950/85 backdrop-blur-md border border-white/10 text-xs text-white">
-              <span class="font-medium text-[11px] text-romance-300">
+            <div class="absolute bottom-2 sm:bottom-3 inset-x-2 sm:inset-x-3 flex items-center justify-between px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-night-950/85 backdrop-blur-md border border-white/10 text-[10px] sm:text-xs text-white">
+              <span class="font-medium text-[10px] sm:text-[11px] text-romance-300">
                 {{ latestChapterText }}
               </span>
-              <Play class="w-3 h-3 text-romance-400 fill-romance-400" />
+              <Play class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-romance-400 fill-romance-400" />
             </div>
           </div>
         </NuxtLink>
+      </div>
+
+      <!-- Series Info & Action Buttons (Order 2 on mobile, Order 1 on desktop) -->
+      <div class="w-full lg:max-w-2xl space-y-3 sm:space-y-4 text-center lg:text-left order-2 lg:order-1">
+        
+        <!-- Header Pill & Badges -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-2.5">
+          <div class="inline-flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-gradient-to-r from-romance-600/30 to-rose-500/20 border border-romance-500/40 text-romance-300 text-[10px] sm:text-xs font-semibold backdrop-blur-md shadow-sm">
+            <Sparkles class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-romance-400 animate-pulse" />
+            <span>Spotlight Romance</span>
+          </div>
+
+          <span 
+            v-if="currentManga.badge"
+            :class="[
+              'px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase backdrop-blur-md border shadow-sm',
+              currentManga.badge === 'HOT' ? 'bg-rose-600/30 border-rose-500/50 text-rose-300' :
+              currentManga.badge === 'TRENDING' ? 'bg-amber-600/30 border-amber-500/50 text-amber-300' :
+              'bg-violet-600/30 border-violet-500/50 text-violet-300'
+            ]"
+          >
+            {{ currentManga.badge }}
+          </span>
+
+          <span 
+            v-if="currentManga.status"
+            class="px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+          >
+            {{ currentManga.status }}
+          </span>
+        </div>
+
+        <!-- Title -->
+        <div class="space-y-1">
+          <NuxtLink :to="`/webtoon/${currentManga.slug || currentManga.id}`" class="inline-block group-hover:text-romance-300 transition-colors">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-black text-white leading-tight drop-shadow-md">
+              {{ currentManga.title }}
+            </h1>
+          </NuxtLink>
+
+          <p v-if="currentManga.alternativeTitles && currentManga.alternativeTitles.length" class="text-[11px] sm:text-xs text-night-400 italic line-clamp-1">
+            Also known as: {{ currentManga.alternativeTitles.join(' • ') }}
+          </p>
+        </div>
+
+        <!-- Live Metrics & Genre Tags -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 text-[11px] sm:text-xs">
+          <!-- Star Rating -->
+          <div class="flex items-center space-x-1 text-amber-400 font-bold bg-night-900/90 px-2.5 sm:px-3 py-1 rounded-xl border border-night-800 shadow-sm">
+            <Star class="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400" />
+            <span>{{ Number(currentManga.rating || 5.0).toFixed(1) }}</span>
+            <span class="text-night-400 font-normal text-[10px] sm:text-[11px]">({{ currentManga.ratingCount || '1' }})</span>
+          </div>
+
+          <!-- Total Views -->
+          <div class="flex items-center space-x-1 text-night-300 font-medium bg-night-900/90 px-2.5 sm:px-3 py-1 rounded-xl border border-night-800 shadow-sm">
+            <Eye class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-romance-400" />
+            <span>{{ formatViews(currentManga.views) }}</span>
+          </div>
+
+          <!-- Public Bookmarks -->
+          <div class="flex items-center space-x-1 text-night-300 font-medium bg-night-900/90 px-2.5 sm:px-3 py-1 rounded-xl border border-night-800 shadow-sm">
+            <Bookmark class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-romance-400 fill-romance-400/30" />
+            <span>{{ formatViews(currentManga.bookmarks) }} saves</span>
+          </div>
+
+          <!-- Genre Tags -->
+          <span 
+            v-for="genre in (currentManga.genres || []).slice(0, 3)" 
+            :key="genre"
+            class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-night-900/80 border border-night-800 text-night-300 hover:border-romance-500/40 transition-colors text-[10px] sm:text-xs"
+          >
+            {{ genre }}
+          </span>
+        </div>
+
+        <!-- Synopsis Excerpt -->
+        <p class="text-night-300 text-xs sm:text-sm lg:text-base line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl mx-auto lg:mx-0">
+          {{ currentManga.synopsis }}
+        </p>
+
+        <!-- Call-to-Action Buttons -->
+        <div class="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 pt-2 sm:pt-3 w-full">
+          <!-- Read / Continue Button -->
+          <NuxtLink 
+            :to="readTargetUrl"
+            class="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-bold text-xs sm:text-sm shadow-glow-pink flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center"
+          >
+            <BookOpen class="w-4 h-4 shrink-0" />
+            <span>{{ userHistory ? `Continue (Ch. ${userHistory.chapterNumber})` : 'Start Reading' }}</span>
+          </NuxtLink>
+
+          <!-- Quick Bookmark Button -->
+          <button 
+            @click="toggleBookmark(currentManga)"
+            :class="[
+              'px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border font-semibold text-xs sm:text-sm flex items-center space-x-1.5 transition-all shrink-0',
+              isBookmarked(currentManga.id || currentManga.slug)
+                ? 'bg-romance-600/25 border-romance-500 text-romance-300 shadow-sm'
+                : 'bg-night-900/90 hover:bg-night-850 border-night-800 text-night-200 hover:text-white'
+            ]"
+            :title="isBookmarked(currentManga.id || currentManga.slug) ? 'Remove from Bookmarks' : 'Save to Bookmarks'"
+          >
+            <Bookmark :class="['w-4 h-4', isBookmarked(currentManga.id || currentManga.slug) ? 'fill-romance-400 text-romance-400' : 'text-night-400']" />
+            <span class="hidden sm:inline">{{ isBookmarked(currentManga.id || currentManga.slug) ? 'In Bookmarks' : 'Bookmark' }}</span>
+          </button>
+
+          <!-- View Details Button -->
+          <NuxtLink 
+            :to="`/webtoon/${currentManga.slug || currentManga.id}`"
+            class="px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-night-900/90 hover:bg-night-850 text-night-200 hover:text-white border border-night-800 font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-colors shrink-0"
+            title="View Details"
+          >
+            <Info class="w-4 h-4 text-romance-400" />
+            <span class="hidden sm:inline">Details</span>
+          </NuxtLink>
+        </div>
       </div>
 
     </div>
@@ -174,7 +175,7 @@
     <!-- Carousel Footer Navigation (Visible when more than 1 featured title) -->
     <div 
       v-if="slides.length > 1" 
-      class="relative z-20 px-6 sm:px-10 pb-6 flex items-center justify-between border-t border-white/5 pt-4 bg-night-950/40 backdrop-blur-sm"
+      class="relative z-20 px-4 sm:px-10 pb-4 sm:pb-6 flex items-center justify-between border-t border-white/5 pt-3 sm:pt-4 bg-night-950/40 backdrop-blur-sm"
     >
       <!-- Indicator Dots -->
       <div class="flex items-center space-x-2">

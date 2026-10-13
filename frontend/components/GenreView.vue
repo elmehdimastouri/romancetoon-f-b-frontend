@@ -18,12 +18,12 @@
     </div>
 
     <!-- Dynamic Genre Filter Pills with SEO Links (/genres/drama/) -->
-    <div class="flex items-center space-x-2 overflow-x-auto pb-2 custom-scroll">
+    <div class="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar">
       <!-- "All" Pill -->
       <NuxtLink 
         to="/genres/"
         :class="[
-          'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center space-x-1.5',
+          'shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center space-x-1.5',
           !normalizedCurrentSlug
             ? 'bg-romance-600 border-romance-500 text-white shadow-glow-pink'
             : 'bg-night-900 border-night-800 text-night-300 hover:text-white hover:border-night-700'
@@ -47,7 +47,7 @@
         :key="g.slug"
         :to="`/genres/${g.slug}/`"
         :class="[
-          'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center space-x-1.5',
+          'shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center space-x-1.5',
           normalizedCurrentSlug === g.slug
             ? 'bg-romance-600 border-romance-500 text-white shadow-glow-pink'
             : 'bg-night-900 border-night-800 text-night-300 hover:text-white hover:border-night-700'
@@ -75,12 +75,12 @@
     </div>
 
     <!-- Loading Skeleton -->
-    <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
       <div v-for="i in 5" :key="i" class="aspect-[3/4] rounded-2xl bg-night-900/60 animate-pulse border border-night-800"></div>
     </div>
 
     <!-- Real Manga Cards Grid -->
-    <div v-else-if="filteredMangas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div v-else-if="filteredMangas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
       <MangaCard 
         v-for="manga in filteredMangas" 
         :key="manga.id" 

@@ -62,12 +62,12 @@
       <div 
         v-for="item in filteredHistory" 
         :key="item.id"
-        class="group flex rounded-2xl bg-night-900 border border-night-800/80 hover:border-romance-500/50 p-3 sm:p-4 gap-4 transition-all duration-300 hover:shadow-glow-pink relative"
+        class="group flex rounded-xl sm:rounded-2xl bg-night-900 border border-night-800/80 hover:border-romance-500/50 p-2.5 sm:p-4 gap-3 sm:gap-4 transition-all duration-300 hover:shadow-glow-pink relative"
       >
         <!-- Cover thumbnail -->
         <NuxtLink 
           :to="`/webtoon/${item.slug || item.id}`"
-          class="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden bg-night-950 shrink-0 relative group-hover:scale-102 transition-transform"
+          class="w-20 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden bg-night-950 shrink-0 relative group-hover:scale-102 transition-transform"
         >
           <img 
             :src="item.cover" 

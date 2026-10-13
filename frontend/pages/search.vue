@@ -60,7 +60,7 @@
     </div>
 
     <!-- Results Grid -->
-    <div v-else-if="filteredResults.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+    <div v-else-if="filteredResults.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
       <MangaCard 
         v-for="manga in filteredResults" 
         :key="manga.id" 
