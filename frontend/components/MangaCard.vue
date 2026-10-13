@@ -43,7 +43,7 @@
       <!-- Rating on top right -->
       <div class="absolute top-2.5 right-2.5 flex items-center space-x-1 px-2 py-0.5 rounded-md bg-night-950/80 backdrop-blur-md border border-white/10 text-amber-400 text-xs font-semibold">
         <Star class="w-3 h-3 fill-amber-400" />
-        <span>{{ manga.rating }}</span>
+        <span>{{ Number(manga.rating || 5.0).toFixed(1) }}</span>
       </div>
 
       <!-- Quick read button on cover hover -->

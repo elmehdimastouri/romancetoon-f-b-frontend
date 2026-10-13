@@ -84,6 +84,20 @@ export async function initMySQL() {
       await conn.query(`ALTER TABLE chapters ADD COLUMN status VARCHAR(20) DEFAULT 'published' AFTER is_published;`)
     } catch (e) { /* ignore if already exists */ }
 
+    // 3. Manga Ratings Table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS manga_ratings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        manga_id VARCHAR(64) NOT NULL,
+        user_fingerprint VARCHAR(128) NOT NULL,
+        rating INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_manga_rating (manga_id, user_fingerprint),
+        FOREIGN KEY (manga_id) REFERENCES mangas(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `)
+
     conn.release()
     return true
   } catch (err) {

@@ -32,7 +32,7 @@
         <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
           <div class="flex items-center space-x-1 text-amber-400 font-semibold bg-night-900/80 px-2.5 py-1 rounded-lg border border-night-800">
             <Star class="w-4 h-4 fill-amber-400" />
-            <span>{{ featured.rating }}</span>
+            <span>{{ Number(featured.rating || 5.0).toFixed(1) }}</span>
             <span class="text-night-400 text-xs">({{ featured.ratingCount }})</span>
           </div>
 

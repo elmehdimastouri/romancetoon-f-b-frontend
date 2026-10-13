@@ -26,10 +26,13 @@ export interface HistoryItem {
 
 const STORAGE_KEY_BOOKMARKS = 'romancetoon_bookmarks_v1'
 const STORAGE_KEY_HISTORY = 'romancetoon_history_v1'
+const STORAGE_KEY_RATINGS = 'romancetoon_ratings_v1'
+const STORAGE_KEY_FINGERPRINT = 'romancetoon_user_fingerprint'
 
 export function useReadingTracker() {
   const bookmarks = useState<BookmarkItem[]>('romance_bookmarks', () => [])
   const history = useState<HistoryItem[]>('romance_history', () => [])
+  const ratings = useState<Record<string, number>>('romance_ratings', () => ({}))
   const isInitialized = useState<boolean>('romance_tracker_init', () => false)
 
   // Initialize from LocalStorage on client mount
@@ -52,6 +55,15 @@ export function useReadingTracker() {
       }
     } catch (e) {
       console.warn('Failed to parse history from localStorage:', e)
+    }
+
+    try {
+      const storedRatings = localStorage.getItem(STORAGE_KEY_RATINGS)
+      if (storedRatings) {
+        ratings.value = JSON.parse(storedRatings)
+      }
+    } catch (e) {
+      console.warn('Failed to parse ratings from localStorage:', e)
     }
 
     isInitialized.value = true
@@ -218,9 +230,42 @@ export function useReadingTracker() {
     return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
+  // ----------------------------------------------------
+  // RATINGS LOGIC
+  // ----------------------------------------------------
+  const getUserFingerprint = (): string => {
+    if (process.server) return 'anonymous'
+    let fp = localStorage.getItem(STORAGE_KEY_FINGERPRINT)
+    if (!fp) {
+      fp = 'usr_' + Math.random().toString(36).substring(2, 12) + Date.now().toString(36)
+      try {
+        localStorage.setItem(STORAGE_KEY_FINGERPRINT, fp)
+      } catch (e) {}
+    }
+    return fp
+  }
+
+  const getUserRating = (idOrSlug: string): number | null => {
+    if (!idOrSlug) return null
+    return ratings.value[idOrSlug] || null
+  }
+
+  const setUserRating = (idOrSlug: string, rating: number) => {
+    if (!idOrSlug) return
+    ratings.value[idOrSlug] = rating
+    if (process.client) {
+      try {
+        localStorage.setItem(STORAGE_KEY_RATINGS, JSON.stringify(ratings.value))
+      } catch (e) {
+        console.error('Failed to save rating to localStorage:', e)
+      }
+    }
+  }
+
   return {
     bookmarks,
     history,
+    ratings,
     init,
     // Bookmarks
     isBookmarked,
@@ -233,6 +278,10 @@ export function useReadingTracker() {
     getHistoryForManga,
     removeFromHistory,
     clearHistory,
-    formatTimeAgo
+    formatTimeAgo,
+    // Ratings
+    getUserFingerprint,
+    getUserRating,
+    setUserRating
   }
 }

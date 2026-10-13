@@ -356,6 +356,129 @@ app.delete('/api/mangas/:id', async (req, res) => {
   res.json({ success: true, message: 'Manga and all associated chapters deleted successfully' })
 })
 
+// Rate manga endpoint (1 to 5 stars)
+app.post('/api/mangas/:id/rate', async (req, res) => {
+  const { id } = req.params
+  const { rating, userFingerprint } = req.body
+
+  const numRating = Math.round(Number(rating))
+  if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+    return res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5' })
+  }
+
+  const fingerprint = (userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      // 1. Resolve actual manga id if slug was passed
+      const [mRows] = await pool.query('SELECT id, rating, rating_count FROM mangas WHERE id = ? OR slug = ?', [id, id])
+      if (mRows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Manga not found' })
+      }
+      const mangaId = mRows[0].id
+
+      // 2. Insert or update user rating
+      await pool.query(
+        `INSERT INTO manga_ratings (manga_id, user_fingerprint, rating)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE rating = VALUES(rating)`,
+        [mangaId, fingerprint, numRating]
+      )
+
+      // 3. Recalculate average and total count
+      const [statsRows] = await pool.query(
+        'SELECT ROUND(AVG(rating), 1) as avgRating, COUNT(*) as totalRatings FROM manga_ratings WHERE manga_id = ?',
+        [mangaId]
+      )
+
+      const avgRating = statsRows[0]?.avgRating ? parseFloat(statsRows[0].avgRating) : numRating
+      const totalRatings = statsRows[0]?.totalRatings || 1
+
+      // 4. Update manga record
+      await pool.query(
+        'UPDATE mangas SET rating = ?, rating_count = ? WHERE id = ?',
+        [avgRating, totalRatings.toString(), mangaId]
+      )
+
+      return res.json({
+        success: true,
+        message: 'Rating submitted successfully',
+        rating: avgRating,
+        ratingCount: totalRatings.toString(),
+        userRating: numRating
+      })
+    } catch (err) {
+      console.error('MySQL rating error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  // Fallback persistent JSON
+  const db = loadData()
+  const manga = (db.mangas || []).find(m => m.id === id || m.slug === id)
+  if (!manga) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+  if (!manga.userRatings) manga.userRatings = {}
+  manga.userRatings[fingerprint] = numRating
+
+  const ratingsList = Object.values(manga.userRatings)
+  const avg = Math.round((ratingsList.reduce((a, b) => a + b, 0) / ratingsList.length) * 10) / 10
+  manga.rating = avg
+  manga.ratingCount = ratingsList.length.toString()
+  saveData(db)
+
+  res.json({
+    success: true,
+    message: 'Rating submitted successfully',
+    rating: manga.rating,
+    ratingCount: manga.ratingCount,
+    userRating: numRating
+  })
+})
+
+// Get user rating for manga
+app.get('/api/mangas/:id/rate', async (req, res) => {
+  const { id } = req.params
+  const fingerprint = (req.query.userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [mRows] = await pool.query('SELECT id, rating, rating_count FROM mangas WHERE id = ? OR slug = ?', [id, id])
+      if (mRows.length === 0) return res.status(404).json({ success: false, message: 'Manga not found' })
+      const mangaId = mRows[0].id
+
+      const [rRows] = await pool.query(
+        'SELECT rating FROM manga_ratings WHERE manga_id = ? AND user_fingerprint = ?',
+        [mangaId, fingerprint]
+      )
+
+      return res.json({
+        success: true,
+        rating: mRows[0].rating,
+        ratingCount: mRows[0].rating_count,
+        userRating: rRows.length > 0 ? rRows[0].rating : null
+      })
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  const db = loadData()
+  const manga = (db.mangas || []).find(m => m.id === id || m.slug === id)
+  if (!manga) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+  res.json({
+    success: true,
+    rating: manga.rating || 5.0,
+    ratingCount: manga.ratingCount || '1',
+    userRating: (manga.userRatings && manga.userRatings[fingerprint]) || null
+  })
+})
+
 // ---------------------------------------------------------------------------
 // 3. Cloudflare R2 SCAN & Selective Publishing (Core Feature!)
 // ---------------------------------------------------------------------------

@@ -108,7 +108,7 @@
       <div class="md:col-span-2 lg:col-span-3 space-y-8">
         
         <!-- Title & Rating -->
-        <div class="space-y-3 text-center md:text-left">
+        <div class="space-y-4 text-center md:text-left">
           <h1 class="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight">
             {{ manga.title }}
           </h1>
@@ -118,19 +118,73 @@
           </p>
 
           <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-            <div class="flex items-center space-x-1 text-amber-400 font-bold bg-night-900 px-3 py-1 rounded-lg border border-night-800 text-sm">
-              <Star class="w-4 h-4 fill-amber-400" />
-              <span>{{ manga.rating || '5.0' }}</span>
-              <span class="text-night-400 font-normal text-xs">({{ manga.ratingCount || '1' }})</span>
+            <div class="flex items-center space-x-1.5 text-amber-400 font-bold bg-night-900 px-3 py-1.5 rounded-xl border border-night-800 text-sm shadow-sm">
+              <Star class="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span>{{ Number(manga.rating || 5.0).toFixed(1) }}</span>
+              <span class="text-night-400 font-normal text-xs">({{ manga.ratingCount || '1' }} {{ Number(manga.ratingCount || 1) === 1 ? 'rating' : 'ratings' }})</span>
             </div>
 
             <span 
               v-for="genre in manga.genres" 
               :key="genre"
-              class="px-3 py-1 rounded-lg bg-night-900 border border-night-800 text-night-200 text-xs font-medium"
+              class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 text-night-200 text-xs font-medium"
             >
               {{ genre }}
             </span>
+          </div>
+
+          <!-- Interactive User Rating Card -->
+          <div class="p-3.5 rounded-2xl bg-night-900/90 border border-night-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <span class="text-xs font-medium text-night-300">
+                {{ userRating ? 'Your Rating:' : 'Rate this Webtoon:' }}
+              </span>
+
+              <!-- 5 Stars with hover & click feedback -->
+              <div class="flex items-center space-x-1" @mouseleave="hoverRating = 0">
+                <button
+                  v-for="starIndex in 5"
+                  :key="starIndex"
+                  type="button"
+                  :disabled="isSubmittingRating"
+                  @mouseenter="hoverRating = starIndex"
+                  @click="handleRate(starIndex)"
+                  class="p-1 rounded-lg transition-transform transform hover:scale-125 active:scale-95 focus:outline-none disabled:opacity-50 group"
+                  :title="`Rate ${starIndex} out of 5 stars`"
+                >
+                  <Star 
+                    :class="[
+                      'w-5 h-5 transition-colors duration-150',
+                      (hoverRating ? starIndex <= hoverRating : (userRating ? starIndex <= userRating : false))
+                        ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                        : 'text-night-700 hover:text-amber-400/50'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- Rating verbal text -->
+              <span class="text-xs font-medium text-amber-400 min-w-[90px] text-center sm:text-left">
+                <template v-if="hoverRating">
+                  {{ ratingLabels[hoverRating] }}
+                </template>
+                <template v-else-if="userRating">
+                  {{ ratingLabels[userRating] }}
+                </template>
+                <template v-else>
+                  <span class="text-night-500 font-normal">Click to vote</span>
+                </template>
+              </span>
+            </div>
+
+            <!-- Feedback message -->
+            <div v-if="ratingStatusMessage" class="flex items-center space-x-1.5 text-xs text-emerald-400 font-medium">
+              <Check class="w-4 h-4 text-emerald-400" />
+              <span>{{ ratingStatusMessage }}</span>
+            </div>
+            <div v-else-if="userRating" class="text-[11px] text-night-500 hidden sm:block">
+              Click another star to update your vote
+            </div>
           </div>
         </div>
 
@@ -213,16 +267,30 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRomanceApi } from '~/composables/useApi'
 import { useReadingTracker } from '~/composables/useReadingTracker'
-import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark } from '@lucide/vue'
+import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark, Check } from '@lucide/vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
-const { fetchManga } = useRomanceApi()
-const { getHistoryForManga, isBookmarked, toggleBookmark } = useReadingTracker()
+const { fetchManga, rateManga, fetchMangaRating } = useRomanceApi()
+const { getHistoryForManga, isBookmarked, toggleBookmark, getUserFingerprint, getUserRating, setUserRating } = useReadingTracker()
 
 const manga = ref<any>(null)
 const isLoading = ref(true)
 const chapterSearch = ref('')
+
+// Interactive Rating States
+const hoverRating = ref(0)
+const userRating = ref<number | null>(null)
+const isSubmittingRating = ref(false)
+const ratingStatusMessage = ref('')
+
+const ratingLabels: Record<number, string> = {
+  1: '1/5 • Poor',
+  2: '2/5 • Fair',
+  3: '3/5 • Good',
+  4: '4/5 • Very Good',
+  5: '5/5 • Masterpiece!'
+}
 
 const userHistory = computed(() => {
   if (!manga.value) return null
@@ -233,7 +301,61 @@ onMounted(async () => {
   isLoading.value = true
   manga.value = await fetchManga(slug.value)
   isLoading.value = false
+
+  if (manga.value) {
+    // 1. Check local storage first
+    const local = getUserRating(manga.value.id) || getUserRating(manga.value.slug) || getUserRating(slug.value)
+    if (local) {
+      userRating.value = local
+    } else {
+      // 2. Check remote rating for this client fingerprint
+      try {
+        const fp = getUserFingerprint()
+        const res = await fetchMangaRating(manga.value.id, fp)
+        if (res && res.userRating) {
+          userRating.value = res.userRating
+          setUserRating(manga.value.id, res.userRating)
+        }
+      } catch (e) {
+        // Silent fallback
+      }
+    }
+  }
 })
+
+const handleRate = async (star: number) => {
+  if (!manga.value || isSubmittingRating.value) return
+  isSubmittingRating.value = true
+
+  const prevRating = userRating.value
+  userRating.value = star
+  setUserRating(manga.value.id, star)
+  if (manga.value.slug) {
+    setUserRating(manga.value.slug, star)
+  }
+
+  try {
+    const fp = getUserFingerprint()
+    const res = await rateManga(manga.value.id, star, fp)
+    if (res && res.success) {
+      if (res.rating !== undefined) manga.value.rating = res.rating
+      if (res.ratingCount !== undefined) manga.value.ratingCount = res.ratingCount
+      ratingStatusMessage.value = prevRating ? 'Rating updated!' : 'Thank you for rating!'
+      setTimeout(() => {
+        ratingStatusMessage.value = ''
+      }, 3500)
+    } else {
+      ratingStatusMessage.value = 'Saved!'
+      setTimeout(() => {
+        ratingStatusMessage.value = ''
+      }, 3000)
+    }
+  } catch (err) {
+    console.error('Failed to submit rating:', err)
+  } finally {
+    isSubmittingRating.value = false
+  }
+}
 
 const publishedChapters = computed(() => {
   if (!manga.value || !manga.value.chapters) return []

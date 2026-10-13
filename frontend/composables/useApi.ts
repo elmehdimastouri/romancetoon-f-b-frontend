@@ -100,6 +100,32 @@ export function useRomanceApi() {
     return await res.json()
   }
 
+  // Rate manga (1-5 stars)
+  const rateManga = async (mangaId: string, rating: number, userFingerprint?: string) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/mangas/${mangaId}/rate`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, userFingerprint })
+      })
+      return await res.json()
+    } catch (err) {
+      console.error(`Failed to rate manga ${mangaId}:`, err)
+      return { success: false, message: 'Network error' }
+    }
+  }
+
+  // Get current user rating
+  const fetchMangaRating = async (mangaId: string, userFingerprint?: string) => {
+    try {
+      const query = userFingerprint ? `?userFingerprint=${encodeURIComponent(userFingerprint)}` : ''
+      const res = await fetch(getApiUrl(`/api/mangas/${mangaId}/rate${query}`))
+      return await res.json()
+    } catch (err) {
+      return null
+    }
+  }
+
   return {
     API_BASE_URL,
     getApiUrl,
@@ -110,6 +136,8 @@ export function useRomanceApi() {
     updateManga,
     deleteManga,
     scanR2,
-    publishChapters
+    publishChapters,
+    rateManga,
+    fetchMangaRating
   }
 }
