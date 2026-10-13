@@ -29,12 +29,22 @@ definePageMeta({
 })
 
 const route = useRoute()
-const mangaId = computed(() => route.params.id as string)
-const rawChapter = computed(() => route.params.chapterId as string)
+
+const mangaId = computed(() => {
+  const m = route.params.id
+  return (Array.isArray(m) ? m[0] : m) || ''
+})
+
+const rawChapter = computed(() => {
+  const c = route.params.chapterId
+  return (Array.isArray(c) ? c[0] : c) || ''
+})
 
 const chapterNumber = computed(() => {
-  const match = rawChapter.value.match(/(\d+(?:\.\d+)?)/)
-  return match ? match[1] : rawChapter.value
+  const str = rawChapter.value
+  if (!str) return ''
+  const match = str.match(/(\d+(?:\.\d+)?)/)
+  return match ? match[1] : str
 })
 
 const { fetchChapter, recordView } = useRomanceApi()
@@ -45,6 +55,10 @@ const currentChapter = ref<any>(null)
 const isLoading = ref(true)
 
 const loadChapter = async () => {
+  if (!mangaId.value || !chapterNumber.value) {
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   try {
     const data = await fetchChapter(mangaId.value, chapterNumber.value)

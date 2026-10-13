@@ -68,7 +68,8 @@
           class="p-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white transition-colors"
           :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'"
         >
-          <component :is="isFullscreen ? Minimize : Maximize" class="w-4 h-4 text-night-300 hover:text-white" />
+          <Minimize v-if="isFullscreen" class="w-4 h-4 text-night-300 hover:text-white" />
+          <Maximize v-else class="w-4 h-4 text-night-300 hover:text-white" />
         </button>
 
         <!-- Chapter drawer toggle -->
@@ -409,6 +410,7 @@ watch(() => props.currentChapter?.number, () => {
 })
 
 const getImageUrl = (url: string, idx: number) => {
+  if (!url) return ''
   const retryCount = retryCounters.value[idx] || 0
   if (retryCount === 0) return url
   const separator = url.includes('?') ? '&' : '?'

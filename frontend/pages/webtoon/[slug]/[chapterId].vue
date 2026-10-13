@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRomanceApi } from '~/composables/useApi'
 import { useReadingTracker } from '~/composables/useReadingTracker'
@@ -35,13 +35,23 @@ definePageMeta({
 })
 
 const route = useRoute()
-const slug = computed(() => route.params.slug as string)
-const rawChapter = computed(() => route.params.chapterId as string)
+
+const slug = computed(() => {
+  const s = route.params.slug
+  return (Array.isArray(s) ? s[0] : s) || ''
+})
+
+const rawChapter = computed(() => {
+  const c = route.params.chapterId
+  return (Array.isArray(c) ? c[0] : c) || ''
+})
 
 // Extract chapter number cleanly: "chapter-1" -> "1", or "chapter-1.5" -> "1.5"
 const chapterNumber = computed(() => {
-  const match = rawChapter.value.match(/(\d+(?:\.\d+)?)/)
-  return match ? match[1] : rawChapter.value
+  const str = rawChapter.value
+  if (!str) return ''
+  const match = str.match(/(\d+(?:\.\d+)?)/)
+  return match ? match[1] : str
 })
 
 const { fetchChapter, recordView } = useRomanceApi()
@@ -52,6 +62,10 @@ const currentChapter = ref<any>(null)
 const isLoading = ref(true)
 
 const loadChapter = async () => {
+  if (!slug.value || !chapterNumber.value) {
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   try {
     const data = await fetchChapter(slug.value, chapterNumber.value)
