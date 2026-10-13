@@ -110,6 +110,34 @@ export async function initMySQL() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `)
 
+    // 5. Custom Genres Table (Add & Remove categories)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS genres (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `)
+
+    try {
+      const [existingGenres] = await conn.query('SELECT COUNT(*) as cnt FROM genres')
+      if (existingGenres[0]?.cnt === 0) {
+        const defaultList = [
+          ['Romance', 'romance'],
+          ['Drama', 'drama'],
+          ['Fantasy', 'fantasy'],
+          ['Historical', 'historical'],
+          ['Contract Marriage', 'contract-marriage'],
+          ['Villainess', 'villainess'],
+          ['CEO & Drama', 'ceo-drama']
+        ]
+        for (const [name, slug] of defaultList) {
+          await conn.query('INSERT IGNORE INTO genres (name, slug) VALUES (?, ?)', [name, slug])
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     conn.release()
     return true
   } catch (err) {

@@ -97,13 +97,14 @@
               <span class="text-night-400 font-normal text-xs">({{ manga.ratingCount || '1' }})</span>
             </div>
 
-            <span 
+            <NuxtLink 
               v-for="genre in manga.genres" 
               :key="genre"
-              class="px-3 py-1 rounded-lg bg-night-900 border border-night-800 text-night-200 text-xs font-medium"
+              :to="`/genres/${slugifyGenre(genre)}/`"
+              class="px-3 py-1 rounded-lg bg-night-900 border border-night-800 text-night-200 text-xs font-medium hover:border-romance-500/60 hover:text-romance-300 transition-colors"
             >
               {{ genre }}
-            </span>
+            </NuxtLink>
           </div>
         </div>
 
@@ -184,7 +185,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useRomanceApi } from '~/composables/useApi'
+import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
 import { Star, BookOpen, Heart, ListOrdered, ChevronRight } from '@lucide/vue'
 
 const route = useRoute()

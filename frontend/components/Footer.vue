@@ -37,10 +37,10 @@
         <div class="space-y-3">
           <h4 class="text-xs font-semibold text-night-200 uppercase tracking-wider">Top Genres</h4>
           <ul class="space-y-2 text-xs">
-            <li><NuxtLink to="/genres?tag=Historical" class="hover:text-romance-300 transition-colors">Historical</NuxtLink></li>
-            <li><NuxtLink to="/genres?tag=Fantasy" class="hover:text-romance-300 transition-colors">Fantasy</NuxtLink></li>
-            <li><NuxtLink to="/genres?tag=Drama" class="hover:text-romance-300 transition-colors">Drama</NuxtLink></li>
-            <li><NuxtLink to="/genres?tag=Romance" class="hover:text-romance-300 transition-colors">Romance</NuxtLink></li>
+            <li><NuxtLink to="/genres/historical/" class="hover:text-romance-300 transition-colors">Historical</NuxtLink></li>
+            <li><NuxtLink to="/genres/fantasy/" class="hover:text-romance-300 transition-colors">Fantasy</NuxtLink></li>
+            <li><NuxtLink to="/genres/drama/" class="hover:text-romance-300 transition-colors">Drama</NuxtLink></li>
+            <li><NuxtLink to="/genres/romance/" class="hover:text-romance-300 transition-colors">Romance</NuxtLink></li>
           </ul>
         </div>
       </div>

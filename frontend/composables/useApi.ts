@@ -1,6 +1,14 @@
 // Central API configuration for RomanceToon
 export const API_BASE_URL = 'https://api.romancetoon.com'
 
+export function slugifyGenre(name: string): string {
+  return (name || '')
+    .toLowerCase()
+    .replace(/&/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
 export function useRomanceApi() {
   const getApiUrl = (endpoint: string) => {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
@@ -169,6 +177,49 @@ export function useRomanceApi() {
     }
   }
 
+  // Fetch all genres
+  const fetchGenres = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/genres'))
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        return json.data
+      }
+      return []
+    } catch (err) {
+      console.error('Failed to fetch genres:', err)
+      return []
+    }
+  }
+
+  // Create new genre
+  const createGenre = async (name: string) => {
+    try {
+      const res = await fetch(getApiUrl('/api/genres'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      return await res.json()
+    } catch (err) {
+      console.error('Failed to create genre:', err)
+      return { success: false, message: 'Network error' }
+    }
+  }
+
+  // Delete genre
+  const deleteGenre = async (slugOrName: string) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/genres/${encodeURIComponent(slugOrName)}`), {
+        method: 'DELETE'
+      })
+      return await res.json()
+    } catch (err) {
+      console.error('Failed to delete genre:', err)
+      return { success: false, message: 'Network error' }
+    }
+  }
+
   return {
     API_BASE_URL,
     getApiUrl,
@@ -183,6 +234,10 @@ export function useRomanceApi() {
     rateManga,
     fetchMangaRating,
     recordView,
-    updateBookmark
+    updateBookmark,
+    fetchGenres,
+    createGenre,
+    deleteGenre,
+    slugifyGenre
   }
 }

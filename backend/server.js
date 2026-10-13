@@ -659,6 +659,115 @@ app.post('/api/mangas/:id/bookmark', async (req, res) => {
 })
 
 // ---------------------------------------------------------------------------
+// 2.5 Genres Management (Add, List, Delete Categories)
+// ---------------------------------------------------------------------------
+function slugifyGenreName(name) {
+  return (name || '')
+    .toLowerCase()
+    .replace(/&/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+// Get all genres
+app.get('/api/genres', async (req, res) => {
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [rows] = await pool.query('SELECT name, slug FROM genres ORDER BY name ASC')
+      return res.json({ success: true, count: rows.length, data: rows })
+    } catch (err) {
+      console.error('MySQL genres query error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  const db = loadData()
+  const genres = db.genres || [
+    { name: 'Romance', slug: 'romance' },
+    { name: 'Drama', slug: 'drama' },
+    { name: 'Fantasy', slug: 'fantasy' },
+    { name: 'Historical', slug: 'historical' },
+    { name: 'Contract Marriage', slug: 'contract-marriage' },
+    { name: 'Villainess', slug: 'villainess' },
+    { name: 'CEO & Drama', slug: 'ceo-drama' }
+  ]
+
+  res.json({ success: true, count: genres.length, data: genres })
+})
+
+// Add new genre
+app.post('/api/genres', async (req, res) => {
+  const { name } = req.body
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: 'Genre name is required' })
+  }
+
+  const cleanName = name.trim()
+  const slug = slugifyGenreName(cleanName)
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      await pool.query('INSERT IGNORE INTO genres (name, slug) VALUES (?, ?)', [cleanName, slug])
+      return res.json({ success: true, message: 'Genre added successfully', genre: { name: cleanName, slug } })
+    } catch (err) {
+      console.error('MySQL add genre error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  const db = loadData()
+  if (!db.genres) {
+    db.genres = [
+      { name: 'Romance', slug: 'romance' },
+      { name: 'Drama', slug: 'drama' },
+      { name: 'Fantasy', slug: 'fantasy' },
+      { name: 'Historical', slug: 'historical' },
+      { name: 'Contract Marriage', slug: 'contract-marriage' },
+      { name: 'Villainess', slug: 'villainess' },
+      { name: 'CEO & Drama', slug: 'ceo-drama' }
+    ]
+  }
+
+  if (!db.genres.some(g => g.slug === slug || g.name.toLowerCase() === cleanName.toLowerCase())) {
+    db.genres.push({ name: cleanName, slug })
+    saveData(db)
+  }
+
+  res.json({ success: true, message: 'Genre added successfully', genre: { name: cleanName, slug } })
+})
+
+// Delete genre
+app.delete('/api/genres/:slugOrName', async (req, res) => {
+  const { slugOrName } = req.params
+  const slug = slugifyGenreName(slugOrName)
+  const status = getStatus()
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      await pool.query('DELETE FROM genres WHERE slug = ? OR name = ?', [slug, slugOrName])
+      return res.json({ success: true, message: 'Genre removed successfully' })
+    } catch (err) {
+      console.error('MySQL delete genre error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  const db = loadData()
+  if (db.genres) {
+    db.genres = db.genres.filter(g => g.slug !== slug && g.name.toLowerCase() !== slugOrName.toLowerCase())
+    saveData(db)
+  }
+
+  res.json({ success: true, message: 'Genre removed successfully' })
+})
+
+// ---------------------------------------------------------------------------
 // 3. Cloudflare R2 SCAN & Selective Publishing (Core Feature!)
 // ---------------------------------------------------------------------------
 

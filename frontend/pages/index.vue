@@ -78,14 +78,26 @@ const mangas = ref<any[]>([])
 const isLoading = ref(true)
 const selectedGenre = ref('All Romance')
 
-const filterGenres = [
-  'All Romance',
-  'CEO & Drama',
-  'Historical',
-  'Villainess',
-  'Cozy Fantasy',
-  'Contract Marriage'
-]
+const filterGenres = computed(() => {
+  const set = new Set<string>()
+  mangas.value.forEach(m => {
+    if (Array.isArray(m.genres)) {
+      m.genres.forEach((g: string) => {
+        if (g && typeof g === 'string') set.add(g.trim())
+      })
+    }
+  })
+  if (set.size > 0) {
+    return ['All Romance', ...Array.from(set)]
+  }
+  return [
+    'All Romance',
+    'Romance',
+    'Drama',
+    'Fantasy',
+    'Historical'
+  ]
+})
 
 const loadMangas = async () => {
   isLoading.value = true

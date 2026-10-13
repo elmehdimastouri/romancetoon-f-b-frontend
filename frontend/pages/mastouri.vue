@@ -102,6 +102,19 @@
           <Layers class="w-4 h-4" />
           <span>Manage Titles ({{ mangas.length }})</span>
         </button>
+
+        <button 
+          @click="activeTab = 'genres'"
+          :class="[
+            'px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 transition-all',
+            activeTab === 'genres'
+              ? 'bg-romance-600 text-white shadow-glow-pink'
+              : 'bg-night-900 text-night-400 hover:text-white border border-night-800'
+          ]"
+        >
+          <Tag class="w-4 h-4 text-romance-300" />
+          <span>Manage Genres ({{ liveGenresList.length }})</span>
+        </button>
       </div>
 
       <!-- TAB 1: Create or Edit Romance Title -->
@@ -261,7 +274,17 @@
 
           <!-- Genres Selection -->
           <div class="space-y-2">
-            <label class="text-xs font-semibold text-night-200">Genres & Tropes (التصنيفات الرومانسية)</label>
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-night-200">Genres & Tropes (التصنيفات الرومانسية)</label>
+              <button 
+                type="button" 
+                @click="activeTab = 'genres'" 
+                class="text-romance-400 hover:text-romance-300 text-[11px] underline flex items-center space-x-1"
+              >
+                <Tag class="w-3 h-3" />
+                <span>+ Manage / Add Categories (إدارة التصنيفات)</span>
+              </button>
+            </div>
             <div class="flex flex-wrap gap-2">
               <button 
                 type="button"
@@ -529,17 +552,127 @@
         </div>
       </div>
 
+      <!-- TAB 4: Manage Genres & Categories -->
+      <div v-if="activeTab === 'genres'" class="p-6 sm:p-8 rounded-3xl glass-panel space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-night-850">
+          <div>
+            <h2 class="font-serif text-xl sm:text-2xl font-bold text-white flex items-center space-x-2">
+              <Tag class="w-5 h-5 text-romance-400" />
+              <span>Manage Romance Genres (إدارة وإضافة وحذف التصنيفات)</span>
+            </h2>
+            <p class="text-xs text-night-400 mt-1">
+              Add new categories or delete unused ones. URLs follow clean SEO structure (e.g. <span class="font-mono text-romance-300">/genres/drama/</span>).
+            </p>
+          </div>
+          <button 
+            @click="loadLiveGenres" 
+            class="px-3.5 py-1.5 rounded-xl bg-night-850 hover:bg-night-800 text-xs text-night-300 hover:text-white flex items-center space-x-1.5 border border-night-800 transition-colors"
+          >
+            <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isGenresLoading }" />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- Add New Genre Box -->
+        <div class="p-5 rounded-2xl bg-night-900/80 border border-night-800 space-y-4">
+          <h3 class="text-xs font-semibold text-night-200 flex items-center space-x-1.5">
+            <PlusCircle class="w-4 h-4 text-romance-400" />
+            <span>Add New Genre (إضافة تصنيف جديد)</span>
+          </h3>
+          <form @submit.prevent="handleAddGenre" class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1">
+              <input 
+                v-model="newGenreName" 
+                type="text" 
+                required 
+                placeholder="e.g. Comedy, Slow Burn, Smut, Isekai, Royalty..."
+                class="w-full bg-night-950 border border-night-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-night-500 focus:outline-none focus:border-romance-500"
+              />
+            </div>
+            <button 
+              type="submit" 
+              :disabled="isAddingGenre || !newGenreName.trim()"
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+            >
+              <PlusCircle class="w-4 h-4" />
+              <span>{{ isAddingGenre ? 'Adding...' : 'Add Genre (إضافة)' }}</span>
+            </button>
+          </form>
+          <p v-if="genreActionMessage" :class="genreActionSuccess ? 'text-emerald-400' : 'text-rose-400'" class="text-xs font-medium">
+            {{ genreActionMessage }}
+          </p>
+        </div>
+
+        <!-- Live Genres List -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-semibold text-night-200">
+            Current Categories (التصنيفات الحالية - {{ liveGenresList.length }})
+          </h3>
+
+          <div v-if="isGenresLoading" class="py-8 text-center text-xs text-night-400">
+            <RefreshCw class="w-5 h-5 text-romance-400 animate-spin mx-auto mb-2" />
+            Loading categories from database...
+          </div>
+
+          <div v-else-if="liveGenresList.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div 
+              v-for="g in liveGenresList" 
+              :key="g.slug"
+              class="p-3.5 rounded-xl bg-night-900 border border-night-800 flex items-center justify-between group hover:border-night-700 transition-all"
+            >
+              <div class="space-y-0.5">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs font-semibold text-white">{{ g.name }}</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-night-800 text-night-400 font-mono">
+                    {{ getGenreCount(g.name, g.slug) }} titles
+                  </span>
+                </div>
+                <div class="text-[11px] text-romance-400 font-mono flex items-center space-x-1">
+                  <span>/genres/{{ g.slug }}/</span>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-1.5">
+                <!-- Preview page link -->
+                <NuxtLink 
+                  :to="`/genres/${g.slug}/`" 
+                  target="_blank"
+                  class="p-2 rounded-lg bg-night-850 hover:bg-night-800 text-night-300 hover:text-white border border-night-800 transition-colors"
+                  title="View Category Page"
+                >
+                  <ExternalLink class="w-3.5 h-3.5" />
+                </NuxtLink>
+
+                <!-- Delete Genre Button -->
+                <button 
+                  @click="handleDeleteGenre(g)"
+                  :disabled="isDeletingGenre === g.slug"
+                  class="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors disabled:opacity-50"
+                  :title="`Delete ${g.name} category`"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="p-8 text-center text-xs text-night-400 border border-night-800 rounded-2xl bg-night-900/40">
+            No categories found. Add one above!
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRomanceApi } from '~/composables/useApi'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
 import { 
   ShieldCheck, Lock, BookOpen, ExternalLink, Sparkles, 
   PlusCircle, Layers, CheckCircle, SearchCode, RefreshCw, 
-  Pencil, Trash2 
+  Pencil, Trash2, Tag 
 } from '@lucide/vue'
 
 useHead({
@@ -548,7 +681,8 @@ useHead({
 
 const { 
   fetchMangas, createManga, updateManga, 
-  deleteManga, scanR2, publishChapters 
+  deleteManga, scanR2, publishChapters,
+  fetchGenres, createGenre, deleteGenre
 } = useRomanceApi()
 
 // Authentication Gate
@@ -567,14 +701,114 @@ const authenticate = () => {
 }
 
 // Active Tab
-const activeTab = ref<'create' | 'scan' | 'manage'>('manage')
+const activeTab = ref<'create' | 'scan' | 'manage' | 'genres'>('manage')
 
 // Live Mangas list from MySQL
 const mangas = ref<any[]>([])
 const isSubmitting = ref(false)
 
+// Live Genres State
+const liveGenresList = ref<Array<{ name: string, slug: string }>>([])
+const isGenresLoading = ref(false)
+const newGenreName = ref('')
+const isAddingGenre = ref(false)
+const isDeletingGenre = ref<string | null>(null)
+const genreActionMessage = ref('')
+const genreActionSuccess = ref(true)
+
+const loadLiveGenres = async () => {
+  isGenresLoading.value = true
+  try {
+    const list = await fetchGenres()
+    if (Array.isArray(list) && list.length > 0) {
+      liveGenresList.value = list
+    } else {
+      liveGenresList.value = [
+        { name: 'Romance', slug: 'romance' },
+        { name: 'Drama', slug: 'drama' },
+        { name: 'Fantasy', slug: 'fantasy' },
+        { name: 'Historical', slug: 'historical' },
+        { name: 'Contract Marriage', slug: 'contract-marriage' },
+        { name: 'Villainess', slug: 'villainess' },
+        { name: 'CEO & Drama', slug: 'ceo-drama' }
+      ]
+    }
+  } catch (err) {
+    console.error('Failed to load genres:', err)
+  } finally {
+    isGenresLoading.value = false
+  }
+}
+
+const handleAddGenre = async () => {
+  if (!newGenreName.value.trim() || isAddingGenre.value) return
+  isAddingGenre.value = true
+  genreActionMessage.value = ''
+  try {
+    const res = await createGenre(newGenreName.value.trim())
+    if (res.success) {
+      genreActionSuccess.value = true
+      genreActionMessage.value = `Category "${newGenreName.value.trim()}" added successfully!`
+      newGenreName.value = ''
+      await loadLiveGenres()
+    } else {
+      genreActionSuccess.value = false
+      genreActionMessage.value = res.message || 'Failed to add category'
+    }
+  } catch (err: any) {
+    genreActionSuccess.value = false
+    genreActionMessage.value = err.message || 'Error adding category'
+  } finally {
+    isAddingGenre.value = false
+  }
+}
+
+const handleDeleteGenre = async (genre: { name: string, slug: string }) => {
+  const confirmed = window.confirm(`Are you sure you want to delete category "${genre.name}"?\n(هل أنت متأكد من حذف هذا التصنيف؟)`)
+  if (!confirmed) return
+
+  isDeletingGenre.value = genre.slug
+  try {
+    const res = await deleteGenre(genre.slug)
+    if (res.success) {
+      liveGenresList.value = liveGenresList.value.filter(g => g.slug !== genre.slug)
+      // Also remove from current form if selected
+      const idx = form.selectedGenres.indexOf(genre.name)
+      if (idx > -1) {
+        form.selectedGenres.splice(idx, 1)
+      }
+    } else {
+      alert(res.message || 'Failed to delete category')
+    }
+  } catch (err: any) {
+    alert(err.message || 'Error deleting category')
+  } finally {
+    isDeletingGenre.value = null
+  }
+}
+
+const getGenreCount = (name: string, slug: string) => {
+  return mangas.value.filter(m => {
+    if (!Array.isArray(m.genres)) return false
+    return m.genres.some((g: string) => slugifyGenre(g) === slug || g.toLowerCase() === name.toLowerCase())
+  }).length
+}
+
+// Dynamically computed available romance genres for manga form
+const availableGenres = computed(() => {
+  if (liveGenresList.value.length > 0) {
+    return liveGenresList.value.map(g => g.name)
+  }
+  return [
+    'Romance', 'CEO & Drama', 'Contract Marriage', 'Historical', 
+    'Villainess', 'Royalty', 'Cozy Fantasy', 'Slow Burn', 
+    'Enemies to Lovers', 'Modern Romance', 'Magic'
+  ]
+})
+
 const loadLiveMangas = async () => {
   mangas.value = await fetchMangas()
+  await loadLiveGenres()
 }
 
 onMounted(() => {
@@ -583,13 +817,6 @@ onMounted(() => {
     loadLiveMangas()
   }
 })
-
-// Available romance genres
-const availableGenres = [
-  'Romance', 'CEO & Drama', 'Contract Marriage', 'Historical', 
-  'Villainess', 'Royalty', 'Cozy Fantasy', 'Slow Burn', 
-  'Enemies to Lovers', 'Modern Romance', 'Magic'
-]
 
 // Manga Create / Edit Form
 const editingMangaId = ref<string | null>(null)
