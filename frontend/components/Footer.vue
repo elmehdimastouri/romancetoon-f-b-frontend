@@ -37,10 +37,10 @@
         <div class="space-y-3">
           <h4 class="text-xs font-semibold text-night-200 uppercase tracking-wider">Top Genres</h4>
           <ul class="space-y-2 text-xs">
-            <li><span class="hover:text-romance-300 transition-colors cursor-pointer">Historical Romance</span></li>
-            <li><span class="hover:text-romance-300 transition-colors cursor-pointer">CEO & Contract Marriage</span></li>
-            <li><span class="hover:text-romance-300 transition-colors cursor-pointer">Villainess Reincarnation</span></li>
-            <li><span class="hover:text-romance-300 transition-colors cursor-pointer">Fantasy Romance</span></li>
+            <li><NuxtLink to="/genres?tag=Historical" class="hover:text-romance-300 transition-colors">Historical</NuxtLink></li>
+            <li><NuxtLink to="/genres?tag=Fantasy" class="hover:text-romance-300 transition-colors">Fantasy</NuxtLink></li>
+            <li><NuxtLink to="/genres?tag=Drama" class="hover:text-romance-300 transition-colors">Drama</NuxtLink></li>
+            <li><NuxtLink to="/genres?tag=Romance" class="hover:text-romance-300 transition-colors">Romance</NuxtLink></li>
           </ul>
         </div>
       </div>

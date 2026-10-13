@@ -105,6 +105,9 @@ const filteredMangas = computed(() => {
   if (selectedGenre.value === 'All Romance') {
     return mangas.value
   }
-  return mangas.value.filter(m => m.genres && m.genres.includes(selectedGenre.value))
+  const target = selectedGenre.value.toLowerCase()
+  return mangas.value.filter(m => 
+    Array.isArray(m.genres) && m.genres.some((g: string) => g.toLowerCase().includes(target) || target.includes(g.toLowerCase()))
+  )
 })
 </script>
