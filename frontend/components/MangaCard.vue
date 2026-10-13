@@ -26,6 +26,20 @@
         </span>
       </div>
 
+      <!-- Bookmark quick toggle -->
+      <button 
+        @click.stop.prevent="toggleBookmark(manga)"
+        :class="[
+          'absolute top-2.5 right-14 p-1.5 rounded-md backdrop-blur-md transition-all shadow-sm z-10',
+          isBookmarked(manga.id || manga.slug)
+            ? 'bg-romance-600 text-white opacity-100'
+            : 'bg-night-950/80 text-night-300 hover:text-white hover:bg-romance-600/80 opacity-0 group-hover:opacity-100'
+        ]"
+        :title="isBookmarked(manga.id || manga.slug) ? 'إزالة من المفضلة' : 'حفظ في المفضلة'"
+      >
+        <Bookmark :class="['w-3 h-3', isBookmarked(manga.id || manga.slug) ? 'fill-white' : '']" />
+      </button>
+
       <!-- Rating on top right -->
       <div class="absolute top-2.5 right-2.5 flex items-center space-x-1 px-2 py-0.5 rounded-md bg-night-950/80 backdrop-blur-md border border-white/10 text-amber-400 text-xs font-semibold">
         <Star class="w-3 h-3 fill-amber-400" />
@@ -35,11 +49,11 @@
       <!-- Quick read button on cover hover -->
       <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-night-950/40 backdrop-blur-[2px]">
         <NuxtLink 
-          :to="`/webtoon/${manga.slug || manga.id}/chapter-1`"
+          :to="userHistory ? `/webtoon/${manga.slug || manga.id}/chapter-${userHistory.chapterNumber}` : `/webtoon/${manga.slug || manga.id}/chapter-1`"
           class="px-4 py-2 rounded-xl bg-romance-600 hover:bg-romance-500 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all transform scale-95 group-hover:scale-100"
         >
           <BookOpen class="w-3.5 h-3.5" />
-          <span>Read Ch. 1</span>
+          <span>{{ userHistory ? `Continue Ch. ${userHistory.chapterNumber}` : 'Read Ch. 1' }}</span>
         </NuxtLink>
       </div>
 
@@ -80,11 +94,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Manga } from '~/data/mangas'
-import { Star, Eye, BookOpen } from '@lucide/vue'
+import { Star, Eye, BookOpen, Bookmark } from '@lucide/vue'
+import { useReadingTracker } from '~/composables/useReadingTracker'
 
 const props = defineProps<{
   manga: Manga
 }>()
+
+const { isBookmarked, toggleBookmark, getHistoryForManga } = useReadingTracker()
+
+const userHistory = computed(() => {
+  return getHistoryForManga(props.manga.id) || getHistoryForManga(props.manga.slug)
+})
 
 const latestChapter = computed(() => {
   return props.manga.chapters && props.manga.chapters.length > 0

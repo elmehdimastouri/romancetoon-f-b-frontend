@@ -28,24 +28,55 @@
           </div>
         </div>
 
-        <!-- Action Buttons (Clean SEO URLs) -->
+        <!-- Action Buttons (Clean SEO URLs & Tracking) -->
         <div class="w-full space-y-2">
+          <!-- Continue Reading from last visited chapter if history exists -->
+          <NuxtLink 
+            v-if="userHistory"
+            :to="`/webtoon/${manga.slug || manga.id}/chapter-${userHistory.chapterNumber}`"
+            class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-sm shadow-glow-pink flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5"
+          >
+            <Play class="w-4 h-4 fill-white" />
+            <span>متابعة القراءة (فصل {{ userHistory.chapterNumber }})</span>
+          </NuxtLink>
+
+          <!-- Read First Chapter -->
           <NuxtLink 
             v-if="publishedChapters.length > 0"
             :to="`/webtoon/${manga.slug || manga.id}/chapter-${publishedChapters[0].number}`"
-            class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-sm shadow-glow-pink flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5"
+            :class="[
+              'w-full py-2.5 px-4 rounded-xl font-medium text-xs flex items-center justify-center space-x-2 transition-all',
+              !userHistory 
+                ? 'bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold shadow-glow-pink' 
+                : 'bg-night-900 hover:bg-night-850 text-night-200 border border-night-800'
+            ]"
           >
             <BookOpen class="w-4 h-4" />
             <span>Read First (Ch. {{ publishedChapters[0].number }})</span>
           </NuxtLink>
 
+          <!-- Read Latest Chapter -->
           <NuxtLink 
-            v-if="latestChapter"
+            v-if="latestChapter && (!userHistory || userHistory.chapterNumber !== latestChapter.number)"
             :to="`/webtoon/${manga.slug || manga.id}/chapter-${latestChapter.number}`"
-            class="w-full py-3 px-4 rounded-xl bg-night-900 hover:bg-night-850 text-night-200 border border-night-800 font-medium text-xs flex items-center justify-center space-x-2 transition-colors"
+            class="w-full py-2 px-4 rounded-xl bg-night-900 hover:bg-night-850 text-night-300 hover:text-white border border-night-800 font-medium text-xs flex items-center justify-center space-x-2 transition-colors"
           >
             <span>Read Latest (Ch. {{ latestChapter.number }})</span>
           </NuxtLink>
+
+          <!-- Bookmark Toggle Button -->
+          <button 
+            @click="toggleBookmark(manga)"
+            :class="[
+              'w-full py-2.5 px-4 rounded-xl border font-medium text-xs flex items-center justify-center space-x-2 transition-all',
+              isBookmarked(manga.id || manga.slug)
+                ? 'bg-romance-600/20 border-romance-500 text-romance-300 shadow-sm'
+                : 'bg-night-900 hover:bg-night-850 border-night-800 text-night-200 hover:text-white'
+            ]"
+          >
+            <Bookmark :class="['w-4 h-4', isBookmarked(manga.id || manga.slug) ? 'fill-romance-400 text-romance-400' : 'text-night-400']" />
+            <span>{{ isBookmarked(manga.id || manga.slug) ? 'محفوظ في المفضلة' : 'إضافة إلى المفضلة' }}</span>
+          </button>
         </div>
 
         <!-- Meta Details Card -->
@@ -181,15 +212,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRomanceApi } from '~/composables/useApi'
-import { Star, BookOpen, Heart, ListOrdered, ChevronRight } from '@lucide/vue'
+import { useReadingTracker } from '~/composables/useReadingTracker'
+import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark } from '@lucide/vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 const { fetchManga } = useRomanceApi()
+const { getHistoryForManga, isBookmarked, toggleBookmark } = useReadingTracker()
 
 const manga = ref<any>(null)
 const isLoading = ref(true)
 const chapterSearch = ref('')
+
+const userHistory = computed(() => {
+  if (!manga.value) return null
+  return getHistoryForManga(manga.value.id) || getHistoryForManga(manga.value.slug) || getHistoryForManga(slug.value)
+})
 
 onMounted(async () => {
   isLoading.value = true

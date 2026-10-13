@@ -48,10 +48,10 @@
           </NuxtLink>
         </nav>
 
-        <!-- Right Action Items (Search + Bookmarks) -->
-        <div class="flex items-center space-x-3">
+        <!-- Right Action Items (Search + Bookmarks + History) -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
           <!-- Search input -->
-          <div class="relative hidden sm:block w-48 md:w-64">
+          <div class="relative hidden sm:block w-40 md:w-56 lg:w-64">
             <input 
               v-model="searchQuery"
               @keyup.enter="handleSearch"
@@ -63,14 +63,38 @@
           </div>
 
           <!-- Bookmarks button -->
-          <button 
-            @click="showBookmarkAlert = true"
-            class="p-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1 text-xs"
-            title="My Saved Favorites"
+          <NuxtLink 
+            to="/bookmarks"
+            class="px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1.5 text-xs font-medium relative group"
+            active-class="text-romance-400 border-romance-500/50 bg-night-800"
+            title="المفضلة / Bookmarks"
           >
-            <Bookmark class="w-4 h-4 text-romance-400" />
-            <span class="hidden lg:inline text-xs font-medium">Library</span>
-          </button>
+            <Bookmark class="w-4 h-4 text-romance-400 group-hover:scale-110 transition-transform" />
+            <span class="hidden sm:inline">Bookmarks</span>
+            <span 
+              v-if="bookmarks.length > 0"
+              class="ml-1 px-1.5 py-0.2 rounded-full bg-romance-600 text-white font-mono text-[10px] font-bold"
+            >
+              {{ bookmarks.length }}
+            </span>
+          </NuxtLink>
+
+          <!-- History button -->
+          <NuxtLink 
+            to="/history"
+            class="px-2.5 sm:px-3 py-2 rounded-xl bg-night-850/80 border border-night-800 text-night-200 hover:text-romance-400 hover:border-romance-500/40 transition-all flex items-center space-x-1.5 text-xs font-medium relative group"
+            active-class="text-romance-400 border-romance-500/50 bg-night-800"
+            title="سجل القراءة / History"
+          >
+            <History class="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+            <span class="hidden sm:inline">السجل</span>
+            <span 
+              v-if="history.length > 0"
+              class="ml-1 px-1.5 py-0.2 rounded-full bg-night-800 text-romance-300 border border-romance-500/30 font-mono text-[10px] font-bold"
+            >
+              {{ history.length }}
+            </span>
+          </NuxtLink>
 
           <!-- Mobile menu toggle -->
           <button 
@@ -98,6 +122,36 @@
         <NuxtLink to="/" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">Discover</NuxtLink>
         <NuxtLink to="/genres" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">All Genres</NuxtLink>
         <NuxtLink to="/popular" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white">Most Loved</NuxtLink>
+        
+        <div class="pt-2 border-t border-night-850/80 space-y-1">
+          <NuxtLink 
+            to="/bookmarks" 
+            @click="mobileMenuOpen = false" 
+            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white"
+          >
+            <span class="flex items-center space-x-2">
+              <Bookmark class="w-4 h-4 text-romance-400" />
+              <span>المفضلة (Bookmarks)</span>
+            </span>
+            <span v-if="bookmarks.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-romance-600 text-white font-mono font-bold">
+              {{ bookmarks.length }}
+            </span>
+          </NuxtLink>
+
+          <NuxtLink 
+            to="/history" 
+            @click="mobileMenuOpen = false" 
+            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-night-200 hover:bg-night-850 hover:text-white"
+          >
+            <span class="flex items-center space-x-2">
+              <History class="w-4 h-4 text-rose-400" />
+              <span>سجل القراءة (History)</span>
+            </span>
+            <span v-if="history.length > 0" class="text-xs px-2 py-0.5 rounded-full bg-night-800 border border-romance-500/30 text-romance-300 font-mono font-bold">
+              {{ history.length }}
+            </span>
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </header>
@@ -105,11 +159,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Heart, Compass, Sparkles, Flame, Search, Bookmark, Menu, X } from '@lucide/vue'
+import { Heart, Compass, Sparkles, Flame, Search, Bookmark, History, Menu, X } from '@lucide/vue'
+import { useReadingTracker } from '~/composables/useReadingTracker'
 
 const searchQuery = ref('')
 const mobileMenuOpen = ref(false)
-const showBookmarkAlert = ref(false)
+
+const { bookmarks, history } = useReadingTracker()
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {

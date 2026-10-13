@@ -28,6 +28,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRomanceApi } from '~/composables/useApi'
+import { useReadingTracker } from '~/composables/useReadingTracker'
 
 definePageMeta({
   layout: 'reader'
@@ -44,6 +45,7 @@ const chapterNumber = computed(() => {
 })
 
 const { fetchChapter } = useRomanceApi()
+const { recordHistory } = useReadingTracker()
 
 const manga = ref<any>(null)
 const currentChapter = ref<any>(null)
@@ -55,6 +57,8 @@ onMounted(async () => {
   if (data) {
     manga.value = data.manga
     currentChapter.value = data.chapter
+    // Automatically record reading progress into local storage history
+    recordHistory(data.manga, data.chapter)
   }
   isLoading.value = false
 })

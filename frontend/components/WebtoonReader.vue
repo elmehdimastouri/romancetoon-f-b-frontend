@@ -70,6 +70,21 @@
           <ListOrdered class="w-4 h-4 text-romance-400" />
           <span class="hidden md:inline">Chapters</span>
         </button>
+
+        <!-- Bookmark toggle button -->
+        <button 
+          @click="toggleBookmark(manga)"
+          :class="[
+            'p-2 rounded-xl border transition-colors flex items-center space-x-1.5 text-xs font-medium',
+            isBookmarked(manga.id || manga.slug)
+              ? 'bg-romance-600/20 border-romance-500 text-romance-300'
+              : 'bg-night-850 hover:bg-night-800 border-night-800 text-night-200 hover:text-romance-400'
+          ]"
+          :title="isBookmarked(manga.id || manga.slug) ? 'إزالة من المفضلة' : 'حفظ في المفضلة'"
+        >
+          <Bookmark :class="['w-4 h-4', isBookmarked(manga.id || manga.slug) ? 'fill-romance-400 text-romance-400' : '']" />
+          <span class="hidden md:inline">{{ isBookmarked(manga.id || manga.slug) ? 'Saved' : 'Save' }}</span>
+        </button>
       </div>
     </header>
 
@@ -254,13 +269,16 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Manga, Chapter, ChapterPage } from '~/data/mangas'
 import { 
   ArrowLeft, ChevronLeft, ChevronRight, ChevronUp, 
-  ListOrdered, Heart, X, BookOpen 
+  ListOrdered, Heart, X, BookOpen, Bookmark 
 } from '@lucide/vue'
+import { useReadingTracker } from '~/composables/useReadingTracker'
 
 const props = defineProps<{
   manga: Manga
   currentChapter: Chapter
 }>()
+
+const { recordHistory, isBookmarked, toggleBookmark } = useReadingTracker()
 
 const showControls = ref(true)
 const showChapterMenu = ref(false)
@@ -347,6 +365,9 @@ const handleScroll = () => {
 }
 
 onMounted(() => {
+  if (props.manga && props.currentChapter) {
+    recordHistory(props.manga, props.currentChapter)
+  }
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
