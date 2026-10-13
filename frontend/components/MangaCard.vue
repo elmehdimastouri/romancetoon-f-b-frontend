@@ -60,7 +60,7 @@
       <!-- Views indicator at bottom of image -->
       <div class="absolute bottom-2 left-2.5 flex items-center space-x-1 text-[11px] text-night-300 font-medium">
         <Eye class="w-3.5 h-3.5 text-romance-400" />
-        <span>{{ manga.views }}</span>
+        <span>{{ formatViews(manga.views) }}</span>
       </div>
     </div>
 

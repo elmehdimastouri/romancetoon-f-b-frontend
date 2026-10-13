@@ -126,6 +126,34 @@ export function useRomanceApi() {
     }
   }
 
+  // Record view count for manga and optional chapter
+  const recordView = async (mangaId: string, chapterNumber?: number | string) => {
+    try {
+      if (process.client) {
+        const sessionKey = chapterNumber 
+          ? `view_ch_${mangaId}_${chapterNumber}` 
+          : `view_m_${mangaId}`
+        const last = sessionStorage.getItem(sessionKey)
+        const now = Date.now()
+        // 10-minute cooldown per session to avoid counting rapid refreshes
+        if (last && now - parseInt(last, 10) < 10 * 60 * 1000) {
+          return null
+        }
+        sessionStorage.setItem(sessionKey, now.toString())
+      }
+
+      const res = await fetch(getApiUrl(`/api/mangas/${mangaId}/view`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterNumber })
+      })
+      return await res.json()
+    } catch (err) {
+      console.error(`Failed to record view for manga ${mangaId}:`, err)
+      return null
+    }
+  }
+
   return {
     API_BASE_URL,
     getApiUrl,
@@ -138,6 +166,7 @@ export function useRomanceApi() {
     scanR2,
     publishChapters,
     rateManga,
-    fetchMangaRating
+    fetchMangaRating,
+    recordView
   }
 }

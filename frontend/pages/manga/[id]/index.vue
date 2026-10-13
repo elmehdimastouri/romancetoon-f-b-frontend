@@ -68,7 +68,7 @@
           </div>
           <div class="flex justify-between py-1">
             <span class="text-night-400">Views:</span>
-            <span class="text-white font-medium">{{ manga.views || '0' }}</span>
+            <span class="text-white font-medium">{{ formatViews(manga.views) }}</span>
           </div>
         </div>
       </div>

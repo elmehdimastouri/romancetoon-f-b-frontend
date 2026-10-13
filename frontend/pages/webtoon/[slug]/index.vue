@@ -99,7 +99,7 @@
           </div>
           <div class="flex justify-between py-1">
             <span class="text-night-400">Views:</span>
-            <span class="text-white font-medium">{{ manga.views || '0' }}</span>
+            <span class="text-white font-medium">{{ formatViews(manga.views) }}</span>
           </div>
         </div>
       </div>
@@ -231,7 +231,10 @@
                   <h4 class="text-xs sm:text-sm font-semibold text-night-100 group-hover:text-romance-300 transition-colors line-clamp-1">
                     {{ ch.title || `Chapter ${ch.number}` }}
                   </h4>
-                  <p class="text-[10px] text-night-400 mt-0.5">{{ ch.releaseDate || 'Published' }}</p>
+                  <p class="text-[10px] text-night-400 mt-0.5 flex items-center space-x-1.5">
+                    <span>{{ ch.releaseDate || 'Published' }}</span>
+                    <span v-if="ch.views" class="text-night-500">• {{ formatViews(ch.views) }} views</span>
+                  </p>
                 </div>
               </div>
 
@@ -271,7 +274,7 @@ import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark, Check
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
-const { fetchManga, rateManga, fetchMangaRating } = useRomanceApi()
+const { fetchManga, rateManga, fetchMangaRating, recordView } = useRomanceApi()
 const { getHistoryForManga, isBookmarked, toggleBookmark, getUserFingerprint, getUserRating, setUserRating } = useReadingTracker()
 
 const manga = ref<any>(null)
@@ -303,12 +306,19 @@ onMounted(async () => {
   isLoading.value = false
 
   if (manga.value) {
-    // 1. Check local storage first
+    // 1. Record view count for this title
+    recordView(manga.value.id).then((res) => {
+      if (res && res.views) {
+        manga.value.views = res.views
+      }
+    })
+
+    // 2. Check local storage first
     const local = getUserRating(manga.value.id) || getUserRating(manga.value.slug) || getUserRating(slug.value)
     if (local) {
       userRating.value = local
     } else {
-      // 2. Check remote rating for this client fingerprint
+      // 3. Check remote rating for this client fingerprint
       try {
         const fp = getUserFingerprint()
         const res = await fetchMangaRating(manga.value.id, fp)

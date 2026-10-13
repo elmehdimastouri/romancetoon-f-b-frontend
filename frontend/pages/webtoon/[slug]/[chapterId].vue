@@ -44,7 +44,7 @@ const chapterNumber = computed(() => {
   return match ? match[1] : rawChapter.value
 })
 
-const { fetchChapter } = useRomanceApi()
+const { fetchChapter, recordView } = useRomanceApi()
 const { recordHistory } = useReadingTracker()
 
 const manga = ref<any>(null)
@@ -59,6 +59,8 @@ onMounted(async () => {
     currentChapter.value = data.chapter
     // Automatically record reading progress into local storage history
     recordHistory(data.manga, data.chapter)
+    // Record view for this chapter & manga
+    recordView(data.manga.id, data.chapter.number)
   }
   isLoading.value = false
 })

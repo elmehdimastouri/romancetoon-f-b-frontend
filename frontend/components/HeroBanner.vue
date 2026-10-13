@@ -74,7 +74,7 @@
       <div class="hidden lg:flex flex-col gap-3 p-5 rounded-2xl glass-panel min-w-[220px]">
         <div class="flex items-center justify-between text-xs text-night-400 pb-2 border-b border-night-800">
           <span>Total Views</span>
-          <span class="text-night-100 font-bold">{{ featured.views }}</span>
+          <span class="text-night-100 font-bold">{{ formatViews(featured.views) }}</span>
         </div>
         <div class="flex items-center justify-between text-xs text-night-400 pb-2 border-b border-night-800">
           <span>Bookmarks</span>

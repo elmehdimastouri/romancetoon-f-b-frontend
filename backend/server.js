@@ -479,6 +479,93 @@ app.get('/api/mangas/:id/rate', async (req, res) => {
   })
 })
 
+// Helper to parse view strings into actual integers
+function parseViewsToNumber(views) {
+  if (!views) return 0
+  if (typeof views === 'number') return Math.round(views)
+  const str = views.toString().trim().toUpperCase()
+  if (str.endsWith('M')) {
+    return Math.round(parseFloat(str) * 1000000)
+  }
+  if (str.endsWith('K')) {
+    return Math.round(parseFloat(str) * 1000)
+  }
+  const num = parseInt(str, 10)
+  return isNaN(num) ? 0 : num
+}
+
+// Increment views for manga and optionally a chapter
+app.post('/api/mangas/:id/view', async (req, res) => {
+  const { id } = req.params
+  const { chapterNumber } = req.body || {}
+  const status = getStatus()
+
+  let mangaViews = 0
+  let chapterViews = null
+
+  if (status.isMysqlConnected) {
+    try {
+      const pool = getPool()
+      const [mRows] = await pool.query('SELECT id, views FROM mangas WHERE id = ? OR slug = ?', [id, id])
+      if (mRows.length === 0) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+      const mangaId = mRows[0].id
+      const currentViews = parseViewsToNumber(mRows[0].views)
+      mangaViews = currentViews + 1
+
+      await pool.query('UPDATE mangas SET views = ? WHERE id = ?', [mangaViews.toString(), mangaId])
+
+      if (chapterNumber !== undefined && chapterNumber !== null && chapterNumber !== '') {
+        const chNum = parseInt(chapterNumber.toString().replace(/\D/g, ''), 10)
+        if (!isNaN(chNum)) {
+          const [cRows] = await pool.query('SELECT chapter_number, views FROM chapters WHERE manga_id = ? AND chapter_number = ?', [mangaId, chNum])
+          if (cRows.length > 0) {
+            const currentChapViews = parseViewsToNumber(cRows[0].views)
+            chapterViews = currentChapViews + 1
+            await pool.query('UPDATE chapters SET views = ? WHERE manga_id = ? AND chapter_number = ?', [chapterViews.toString(), mangaId, chNum])
+          }
+        }
+      }
+
+      return res.json({
+        success: true,
+        mangaId,
+        views: mangaViews.toString(),
+        chapterViews: chapterViews !== null ? chapterViews.toString() : undefined
+      })
+    } catch (err) {
+      console.error('MySQL view increment error:', err)
+      return res.status(500).json({ success: false, message: err.message })
+    }
+  }
+
+  // Persistent JSON Fallback
+  const db = loadData()
+  const manga = (db.mangas || []).find(m => m.id === id || m.slug === id)
+  if (!manga) return res.status(404).json({ success: false, message: 'Manga not found' })
+
+  mangaViews = parseViewsToNumber(manga.views) + 1
+  manga.views = mangaViews.toString()
+
+  if (chapterNumber !== undefined && chapterNumber !== null && chapterNumber !== '' && manga.chapters) {
+    const chNum = parseInt(chapterNumber.toString().replace(/\D/g, ''), 10)
+    const chap = manga.chapters.find(c => c.number === chNum)
+    if (chap) {
+      chapterViews = parseViewsToNumber(chap.views) + 1
+      chap.views = chapterViews.toString()
+    }
+  }
+
+  saveData(db)
+
+  res.json({
+    success: true,
+    mangaId: manga.id,
+    views: mangaViews.toString(),
+    chapterViews: chapterViews !== null ? chapterViews.toString() : undefined
+  })
+})
+
 // ---------------------------------------------------------------------------
 // 3. Cloudflare R2 SCAN & Selective Publishing (Core Feature!)
 // ---------------------------------------------------------------------------
