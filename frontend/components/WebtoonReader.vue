@@ -62,6 +62,15 @@
           </button>
         </div>
 
+        <!-- Fullscreen toggle button -->
+        <button 
+          @click="toggleFullscreen"
+          class="p-2 rounded-xl bg-night-850 hover:bg-night-800 border border-night-800 text-night-200 hover:text-white transition-colors"
+          :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'"
+        >
+          <component :is="isFullscreen ? Minimize : Maximize" class="w-4 h-4 text-night-300 hover:text-white" />
+        </button>
+
         <!-- Chapter drawer toggle -->
         <button 
           @click="showChapterMenu = !showChapterMenu"
@@ -146,7 +155,7 @@
             v-else
             :src="getImageUrl(page.url, idx)" 
             :alt="`Page ${page.page}`"
-            loading="lazy"
+            :loading="idx < 2 ? 'eager' : 'lazy'"
             decoding="async"
             @error="onImageError(idx)"
             @load="onImageLoad(idx)"
@@ -170,7 +179,7 @@
       </div>
 
       <!-- End of chapter section -->
-      <div class="mt-12 p-6 sm:p-10 rounded-2xl bg-night-900 border border-night-800 text-center space-y-5 mx-4">
+      <div class="mt-12 p-6 sm:p-10 rounded-2xl bg-night-900 border border-night-800 text-center space-y-5 mx-4" @click.stop>
         <Heart class="w-8 h-8 text-romance-400 fill-romance-500/20 mx-auto animate-pulse" />
         <h3 class="text-lg font-serif font-bold text-white">You've reached the end of Chapter {{ currentChapter.number }}</h3>
         <p class="text-xs text-night-400 max-w-md mx-auto">
@@ -203,6 +212,15 @@
           >
             <span>Next Chapter (→)</span>
             <ChevronRight class="w-4 h-4" />
+          </NuxtLink>
+
+          <NuxtLink 
+            v-else
+            :to="`/webtoon/${manga.slug || manga.id}`"
+            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white text-xs font-semibold shadow-glow-pink flex items-center space-x-1.5 transition-all"
+          >
+            <BookOpen class="w-4 h-4" />
+            <span>Webtoon Details</span>
           </NuxtLink>
         </div>
       </div>
@@ -305,7 +323,7 @@
             @click="showChapterMenu = false"
             :class="[
               'p-3 rounded-xl border flex items-center justify-between text-xs transition-colors',
-              ch.number === currentChapter.number 
+              Number(ch.number) === Number(currentChapter.number)
                 ? 'bg-romance-600/20 border-romance-500 text-white font-bold' 
                 : 'bg-night-900 border-night-800 text-night-300 hover:bg-night-850 hover:text-white'
             ]"
@@ -326,11 +344,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { Manga, Chapter, ChapterPage } from '~/data/mangas'
 import { 
   ArrowLeft, ChevronLeft, ChevronRight, ChevronUp, 
-  ListOrdered, Heart, X, BookOpen, Bookmark, AlertCircle, RefreshCw 
+  ListOrdered, Heart, X, BookOpen, Bookmark, AlertCircle, RefreshCw,
+  Maximize, Minimize 
 } from '@lucide/vue'
 import { useReadingTracker } from '~/composables/useReadingTracker'
 
@@ -347,6 +366,25 @@ const readerWidth = ref('max-w-[800px]')
 const scrollProgress = ref(0)
 let lastScrollY = 0
 
+// Fullscreen state
+const isFullscreen = ref(false)
+const toggleFullscreen = () => {
+  if (typeof document === 'undefined') return
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {})
+    isFullscreen.value = true
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {})
+      isFullscreen.value = false
+    }
+  }
+}
+
+const onFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
 // Broken images tracking and retry state
 const failedImages = ref<Record<number, boolean>>({})
 const retryCounters = ref<Record<number, number>>({})
@@ -354,6 +392,20 @@ const isRetrying = ref<Record<number, boolean>>({})
 
 const failedCount = computed(() => {
   return Object.values(failedImages.value).filter(Boolean).length
+})
+
+// Reset retry state and scroll position whenever chapter changes
+watch(() => props.currentChapter?.number, () => {
+  failedImages.value = {}
+  retryCounters.value = {}
+  isRetrying.value = {}
+  scrollProgress.value = 0
+  if (process.client) {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+  if (props.manga && props.currentChapter) {
+    recordHistory(props.manga, props.currentChapter)
+  }
 })
 
 const getImageUrl = (url: string, idx: number) => {
@@ -390,31 +442,45 @@ const retryAllBrokenImages = () => {
 
 // Current chapter pages
 const pages = computed<ChapterPage[]>(() => {
-  if (props.currentChapter.pages && props.currentChapter.pages.length > 0) {
-    return props.currentChapter.pages.map((p, idx) => ({
-      ...p,
-      page: p.page || idx + 1,
-      url: (p.url && (p.url.startsWith('http://') || p.url.startsWith('https://'))) 
-        ? p.url 
-        : `https://${(p.url || '').replace(/^\/+/, '')}`
-    }))
+  if (props.currentChapter?.pages && Array.isArray(props.currentChapter.pages)) {
+    return props.currentChapter.pages
+      .map((p: any, idx: number) => {
+        const rawUrl = typeof p === 'string' ? p : p?.url
+        if (!rawUrl || typeof rawUrl !== 'string') return null
+        const trimmed = rawUrl.trim()
+        if (!trimmed) return null
+        const cleanUrl = (trimmed.startsWith('http://') || trimmed.startsWith('https://')) 
+          ? trimmed 
+          : `https://${trimmed.replace(/^\/+/, '')}`
+        return {
+          page: (typeof p === 'object' && p?.page) ? p.page : idx + 1,
+          url: cleanUrl
+        }
+      })
+      .filter((p): p is ChapterPage => Boolean(p && p.url))
   }
   return []
 })
 
-// Safe list of manga chapters
+// Safe list of manga chapters sorted in correct ascending order
 const mangaChapters = computed(() => {
-  return (props.manga && props.manga.chapters && props.manga.chapters.length > 0)
-    ? props.manga.chapters
-    : [props.currentChapter]
+  if (props.manga && props.manga.chapters && props.manga.chapters.length > 0) {
+    return props.manga.chapters
+      .filter((c: any) => c.isPublished !== false)
+      .slice()
+      .sort((a: any, b: any) => Number(a.number) - Number(b.number))
+  }
+  return [props.currentChapter]
 })
 
-// Previous & Next chapters
+// Previous & Next chapters (handling number vs string types safely)
 const currentIndex = computed(() => {
+  const curNum = Number(props.currentChapter.number)
+  const curId = String(props.currentChapter.id || props.currentChapter.number)
   return mangaChapters.value.findIndex(c => 
-    c.number === props.currentChapter.number || 
-    c.id === props.currentChapter.id ||
-    c.id === props.currentChapter.number?.toString()
+    Number(c.number) === curNum || 
+    String(c.id) === curId ||
+    String(c.number) === curId
   )
 })
 
@@ -438,7 +504,7 @@ const goToChapter = (chap: any) => {
   navigateTo(`/webtoon/${slug}/chapter-${chap.number}`)
 }
 
-// Keyboard Navigation (ArrowLeft = Prev, ArrowRight = Next)
+// Keyboard Navigation (ArrowLeft = Prev, ArrowRight = Next, F = Fullscreen, Esc = Close Drawer)
 const handleKeydown = (e: KeyboardEvent) => {
   const target = e.target as HTMLElement
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
@@ -455,6 +521,11 @@ const handleKeydown = (e: KeyboardEvent) => {
       e.preventDefault()
       goToChapter(prevChapter.value)
     }
+  } else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault()
+    toggleFullscreen()
+  } else if (e.key === 'Escape' && showChapterMenu.value) {
+    showChapterMenu.value = false
   }
 }
 
@@ -498,10 +569,12 @@ onMounted(() => {
   }
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('keydown', handleKeydown)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>

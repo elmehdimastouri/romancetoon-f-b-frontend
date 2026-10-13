@@ -191,8 +191,8 @@ export function useReadingTracker() {
     // Clean chapter number
     let chNum: number | string = chapter.number || chapter.id || 1
     if (typeof chNum === 'string') {
-      const match = chNum.match(/(\d+)/)
-      if (match) chNum = parseInt(match[1], 10)
+      const match = chNum.match(/(\d+(?:\.\d+)?)/)
+      if (match) chNum = match[1].includes('.') ? parseFloat(match[1]) : parseInt(match[1], 10)
     }
 
     const chapterTitle = chapter.title || `Chapter ${chNum}`

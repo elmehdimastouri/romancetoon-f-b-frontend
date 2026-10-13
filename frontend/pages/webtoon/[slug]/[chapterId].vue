@@ -38,9 +38,9 @@ const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 const rawChapter = computed(() => route.params.chapterId as string)
 
-// Extract chapter number cleanly: "chapter-1" -> "1", or raw "1"
+// Extract chapter number cleanly: "chapter-1" -> "1", or "chapter-1.5" -> "1.5"
 const chapterNumber = computed(() => {
-  const match = rawChapter.value.match(/(\d+)/)
+  const match = rawChapter.value.match(/(\d+(?:\.\d+)?)/)
   return match ? match[1] : rawChapter.value
 })
 
@@ -51,18 +51,39 @@ const manga = ref<any>(null)
 const currentChapter = ref<any>(null)
 const isLoading = ref(true)
 
-onMounted(async () => {
+const loadChapter = async () => {
   isLoading.value = true
-  const data = await fetchChapter(slug.value, chapterNumber.value)
-  if (data) {
-    manga.value = data.manga
-    currentChapter.value = data.chapter
-    // Automatically record reading progress into local storage history
-    recordHistory(data.manga, data.chapter)
-    // Record view for this chapter & manga
-    recordView(data.manga.id, data.chapter.number)
+  try {
+    const data = await fetchChapter(slug.value, chapterNumber.value)
+    if (data && data.chapter) {
+      manga.value = data.manga
+      currentChapter.value = data.chapter
+      // Automatically record reading progress into local storage history
+      recordHistory(data.manga, data.chapter)
+      // Record view for this chapter & manga
+      recordView(data.manga.id, data.chapter.number)
+      if (process.client) {
+        window.scrollTo({ top: 0, behavior: 'instant' })
+      }
+    } else {
+      manga.value = null
+      currentChapter.value = null
+    }
+  } catch (err) {
+    console.error('Error loading chapter:', err)
+    manga.value = null
+    currentChapter.value = null
+  } finally {
+    isLoading.value = false
   }
-  isLoading.value = false
+}
+
+onMounted(() => {
+  loadChapter()
+})
+
+watch(() => [route.params.slug, route.params.chapterId], () => {
+  loadChapter()
 })
 
 useHead(() => ({
