@@ -11,7 +11,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MOBILE TOP HEADER VIEW (Visible only on < md)  -->
+    <!-- MOBILE VIEW (Visible only on screens < md)    -->
     <!-- ============================================== -->
     <div class="md:hidden relative -mt-28 z-10 space-y-4">
       <!-- Cover + Core Info Card -->
@@ -82,7 +82,7 @@
         </button>
       </div>
 
-      <!-- Genres Pills (Edge-to-edge scroll on mobile) -->
+      <!-- Genres Pills (Mobile) -->
       <div v-if="manga.genres && manga.genres.length" class="-mx-4 px-4 flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar">
         <NuxtLink 
           v-for="genre in manga.genres" 
@@ -93,16 +93,142 @@
           {{ genre }}
         </NuxtLink>
       </div>
+
+      <!-- Mobile Rating Box -->
+      <div class="p-3.5 rounded-2xl bg-night-900/90 border border-night-800/80 flex items-center justify-between gap-3 shadow-inner">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xs font-medium text-night-300">
+            {{ userRating ? 'Your Rating:' : 'Rate:' }}
+          </span>
+
+          <div class="flex items-center space-x-1" @mouseleave="hoverRating = 0">
+            <button
+              v-for="starIndex in 5"
+              :key="starIndex"
+              type="button"
+              :disabled="isSubmittingRating"
+              @mouseenter="hoverRating = starIndex"
+              @click="handleRate(starIndex)"
+              class="p-1 rounded-lg transition-transform transform active:scale-95 focus:outline-none disabled:opacity-50"
+              :title="`Rate ${starIndex} out of 5 stars`"
+            >
+              <Star 
+                :class="[
+                  'w-4 h-4 transition-colors duration-150',
+                  (hoverRating ? starIndex <= hoverRating : (userRating ? starIndex <= userRating : false))
+                    ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                    : 'text-night-700'
+                ]"
+              />
+            </button>
+          </div>
+
+          <span class="text-xs font-medium text-amber-400">
+            <template v-if="hoverRating">{{ ratingLabels[hoverRating] }}</template>
+            <template v-else-if="userRating">{{ ratingLabels[userRating] }}</template>
+          </span>
+        </div>
+
+        <div v-if="ratingStatusMessage" class="flex items-center space-x-1 text-xs text-emerald-400 font-medium">
+          <Check class="w-3.5 h-3.5 text-emerald-400" />
+          <span>{{ ratingStatusMessage }}</span>
+        </div>
+      </div>
+
+      <!-- Synopsis (Mobile) -->
+      <div class="p-4 rounded-2xl glass-panel space-y-2">
+        <h3 class="font-serif font-bold text-base text-white flex items-center space-x-2">
+          <Heart class="w-4 h-4 text-romance-400" />
+          <span>Synopsis</span>
+        </h3>
+        <p class="text-night-300 text-xs sm:text-sm leading-relaxed">
+          {{ manga.synopsis }}
+        </p>
+      </div>
+
+      <!-- Mobile Meta Info Card -->
+      <div class="p-4 rounded-2xl glass-panel grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Author</span>
+          <span class="text-white font-medium">{{ manga.author }}</span>
+        </div>
+        <div>
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Artist</span>
+          <span class="text-white font-medium">{{ manga.artist }}</span>
+        </div>
+        <div v-if="manga.releaseYear">
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Release Year</span>
+          <span class="text-white font-medium">{{ manga.releaseYear }}</span>
+        </div>
+        <div>
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Status</span>
+          <span class="text-emerald-400 font-medium">{{ manga.status }}</span>
+        </div>
+        <div>
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Total Views</span>
+          <span class="text-white font-medium">{{ formatViews(manga.views) }}</span>
+        </div>
+        <div>
+          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Bookmarks</span>
+          <span class="text-romance-300 font-medium">{{ formatViews(manga.bookmarks || '0') }}</span>
+        </div>
+      </div>
+
+      <!-- Chapters List Section (Mobile) -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between pb-2.5 border-b border-night-850">
+          <div class="flex items-center space-x-2">
+            <ListOrdered class="w-4 h-4 text-romance-400" />
+            <h2 class="font-serif text-base font-bold text-white">Chapters ({{ publishedChapters.length }})</h2>
+          </div>
+          
+          <input 
+            v-model="chapterSearch" 
+            type="text" 
+            placeholder="Search ch..."
+            class="bg-night-900 border border-night-800 rounded-xl px-2.5 py-1 text-xs text-night-100 placeholder-night-500 focus:outline-none focus:border-romance-500 w-28"
+          />
+        </div>
+
+        <div v-if="filteredChapters.length > 0" class="space-y-2">
+          <NuxtLink 
+            v-for="ch in filteredChapters" 
+            :key="ch.number"
+            :to="`/webtoon/${manga.slug || manga.id}/chapter-${ch.number}`"
+            class="p-3 rounded-xl bg-night-900 hover:bg-night-850 border border-night-800/80 flex items-center justify-between group transition-all"
+          >
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-lg bg-night-800 text-night-300 flex items-center justify-center font-mono text-xs font-bold shrink-0">
+                {{ ch.number }}
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-xs font-semibold text-night-100 truncate">
+                  {{ ch.title || `Chapter ${ch.number}` }}
+                </h4>
+                <p class="text-[10px] text-night-400">
+                  {{ ch.releaseDate || 'Published' }}
+                </p>
+              </div>
+            </div>
+
+            <ChevronRight class="w-4 h-4 text-night-400 shrink-0" />
+          </NuxtLink>
+        </div>
+
+        <div v-else class="p-6 rounded-2xl bg-night-900/60 border border-night-800 text-center text-xs text-night-400">
+          No published chapters available matching your search.
+        </div>
+      </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- DESKTOP DUAL COLUMN CONTAINER (Visible on md+) -->
-    <!-- ============================================== -->
-    <div class="hidden md:grid relative -mt-48 z-10 grid-cols-3 lg:grid-cols-4 gap-8">
+    <!-- ============================================================== -->
+    <!-- DESKTOP VIEW (EXACTLY AS IT WAS BEFORE - Visible on md and up) -->
+    <!-- ============================================================== -->
+    <div class="hidden md:grid relative -mt-36 sm:-mt-48 z-10 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
       
-      <!-- Left Column: Cover & Desktop Sidebar -->
-      <div class="space-y-4 flex flex-col items-start">
-        <div class="w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-2 border-night-800 bg-night-900 relative group">
+      <!-- Left Column: Cover & Quick Stats -->
+      <div class="space-y-4 flex flex-col items-center md:items-start">
+        <div class="w-56 sm:w-64 md:w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-2 border-night-800 bg-night-900 relative group">
           <img 
             :src="manga.cover" 
             :alt="manga.title" 
@@ -115,7 +241,7 @@
           </div>
         </div>
 
-        <!-- Action Buttons (Desktop) -->
+        <!-- Action Buttons (Clean SEO URLs & Tracking) -->
         <div class="w-full space-y-2">
           <!-- Continue Reading from last visited chapter if history exists -->
           <NuxtLink 
@@ -169,7 +295,7 @@
           </button>
         </div>
 
-        <!-- Meta Details Card (Desktop) -->
+        <!-- Meta Details Card -->
         <div class="w-full p-4 rounded-2xl glass-panel space-y-3 text-xs">
           <div class="flex justify-between py-1 border-b border-night-800">
             <span class="text-night-400">Author:</span>
@@ -198,9 +324,11 @@
         </div>
       </div>
 
-      <!-- Right Column: Desktop Title & Genres -->
-      <div class="col-span-2 lg:col-span-3 space-y-6">
-        <div class="space-y-4">
+      <!-- Right Column: Title, Synopsis, Chapters -->
+      <div class="md:col-span-2 lg:col-span-3 space-y-8">
+        
+        <!-- Title & Rating -->
+        <div class="space-y-4 text-center md:text-left">
           <h1 class="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight">
             {{ manga.title }}
           </h1>
@@ -209,7 +337,7 @@
             Also known as: {{ manga.alternativeTitles.join(' • ') }}
           </p>
 
-          <div class="flex flex-wrap items-center gap-2 pt-1">
+          <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
             <div class="flex items-center space-x-1.5 text-amber-400 font-bold bg-night-900 px-3 py-1.5 rounded-xl border border-night-800 text-sm shadow-sm">
               <Star class="w-4 h-4 fill-amber-400 text-amber-400" />
               <span>{{ Number(manga.rating || 5.0).toFixed(1) }}</span>
@@ -225,159 +353,124 @@
               {{ genre }}
             </NuxtLink>
           </div>
+
+          <!-- Interactive User Rating Card -->
+          <div class="p-3.5 rounded-2xl bg-night-900/90 border border-night-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <span class="text-xs font-medium text-night-300">
+                {{ userRating ? 'Your Rating:' : 'Rate this Webtoon:' }}
+              </span>
+
+              <!-- 5 Stars with hover & click feedback -->
+              <div class="flex items-center space-x-1" @mouseleave="hoverRating = 0">
+                <button
+                  v-for="starIndex in 5"
+                  :key="starIndex"
+                  type="button"
+                  :disabled="isSubmittingRating"
+                  @mouseenter="hoverRating = starIndex"
+                  @click="handleRate(starIndex)"
+                  class="p-1 rounded-lg transition-transform transform hover:scale-125 active:scale-95 focus:outline-none disabled:opacity-50 group"
+                  :title="`Rate ${starIndex} out of 5 stars`"
+                >
+                  <Star 
+                    :class="[
+                      'w-5 h-5 transition-colors duration-150',
+                      (hoverRating ? starIndex <= hoverRating : (userRating ? starIndex <= userRating : false))
+                        ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                        : 'text-night-700 hover:text-amber-400/50'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- Rating verbal text -->
+              <span class="text-xs font-medium text-amber-400 min-w-[90px] text-center sm:text-left">
+                <template v-if="hoverRating">
+                  {{ ratingLabels[hoverRating] }}
+                </template>
+                <template v-else-if="userRating">
+                  {{ ratingLabels[userRating] }}
+                </template>
+                <template v-else>
+                  <span class="text-night-500 font-normal">Click to vote</span>
+                </template>
+              </span>
+            </div>
+
+            <!-- Feedback message -->
+            <div v-if="ratingStatusMessage" class="flex items-center space-x-1.5 text-xs text-emerald-400 font-medium">
+              <Check class="w-4 h-4 text-emerald-400" />
+              <span>{{ ratingStatusMessage }}</span>
+            </div>
+            <div v-else-if="userRating" class="text-[11px] text-night-500 hidden sm:block">
+              Click another star to update your vote
+            </div>
+          </div>
         </div>
-      </div>
 
-    </div>
+        <!-- Synopsis -->
+        <div class="p-6 rounded-2xl glass-panel space-y-3">
+          <h3 class="font-serif font-bold text-lg text-white flex items-center space-x-2">
+            <Heart class="w-4 h-4 text-romance-400" />
+            <span>Synopsis</span>
+          </h3>
+          <p class="text-night-300 text-sm sm:text-base leading-relaxed">
+            {{ manga.synopsis }}
+          </p>
+        </div>
 
-    <!-- ============================================== -->
-    <!-- COMMON CONTENT (Shared on Mobile & Desktop)   -->
-    <!-- ============================================== -->
-    <div class="space-y-6 sm:space-y-8">
-      
-      <!-- Interactive User Rating Card -->
-      <div class="p-3.5 sm:p-4 rounded-2xl bg-night-900/90 border border-night-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
-        <div class="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
-          <span class="text-xs font-medium text-night-300">
-            {{ userRating ? 'Your Rating:' : 'Rate this Webtoon:' }}
-          </span>
+        <!-- Chapters List Section -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-night-850">
+            <div class="flex items-center space-x-2">
+              <ListOrdered class="w-5 h-5 text-romance-400" />
+              <h2 class="font-serif text-xl font-bold text-white">Chapters ({{ publishedChapters.length }})</h2>
+            </div>
+            
+            <input 
+              v-model="chapterSearch" 
+              type="text" 
+              placeholder="Search chapter..."
+              class="bg-night-900 border border-night-800 rounded-xl px-3 py-1.5 text-xs text-night-100 placeholder-night-500 focus:outline-none focus:border-romance-500 w-36 sm:w-48"
+            />
+          </div>
 
-          <!-- 5 Stars with hover & click feedback -->
-          <div class="flex items-center space-x-1" @mouseleave="hoverRating = 0">
-            <button
-              v-for="starIndex in 5"
-              :key="starIndex"
-              type="button"
-              :disabled="isSubmittingRating"
-              @mouseenter="hoverRating = starIndex"
-              @click="handleRate(starIndex)"
-              class="p-1 rounded-lg transition-transform transform hover:scale-125 active:scale-95 focus:outline-none disabled:opacity-50 group"
-              :title="`Rate ${starIndex} out of 5 stars`"
+          <!-- Clean SEO Chapter Links -->
+          <div v-if="filteredChapters.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <NuxtLink 
+              v-for="ch in filteredChapters" 
+              :key="ch.number"
+              :to="`/webtoon/${manga.slug || manga.id}/chapter-${ch.number}`"
+              class="p-4 rounded-xl bg-night-900 hover:bg-night-850 border border-night-800/80 hover:border-romance-500/50 flex items-center justify-between group transition-all"
             >
-              <Star 
-                :class="[
-                  'w-5 h-5 transition-colors duration-150',
-                  (hoverRating ? starIndex <= hoverRating : (userRating ? starIndex <= userRating : false))
-                    ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
-                    : 'text-night-700 hover:text-amber-400/50'
-                ]"
-              />
-            </button>
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-night-800 group-hover:bg-romance-600/20 group-hover:text-romance-400 text-night-300 flex items-center justify-center font-mono text-xs font-bold transition-colors">
+                  {{ ch.number }}
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-semibold text-night-100 group-hover:text-romance-300 transition-colors line-clamp-1">
+                    {{ ch.title || `Chapter ${ch.number}` }}
+                  </h4>
+                  <p class="text-[10px] text-night-400 mt-0.5 flex items-center space-x-1.5">
+                    <span>{{ ch.releaseDate || 'Published' }}</span>
+                    <span v-if="ch.views" class="text-night-500">• {{ formatViews(ch.views) }} views</span>
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 text-night-400 group-hover:text-romance-400">
+                <ChevronRight class="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </NuxtLink>
           </div>
 
-          <!-- Rating verbal text -->
-          <span class="text-xs font-medium text-amber-400 min-w-[90px] text-center sm:text-left">
-            <template v-if="hoverRating">
-              {{ ratingLabels[hoverRating] }}
-            </template>
-            <template v-else-if="userRating">
-              {{ ratingLabels[userRating] }}
-            </template>
-            <template v-else>
-              <span class="text-night-500 font-normal">Click to vote</span>
-            </template>
-          </span>
-        </div>
-
-        <!-- Feedback message -->
-        <div v-if="ratingStatusMessage" class="flex items-center space-x-1.5 text-xs text-emerald-400 font-medium">
-          <Check class="w-4 h-4 text-emerald-400" />
-          <span>{{ ratingStatusMessage }}</span>
-        </div>
-        <div v-else-if="userRating" class="text-[11px] text-night-500 hidden sm:block">
-          Click another star to update your vote
-        </div>
-      </div>
-
-      <!-- Synopsis -->
-      <div class="p-4 sm:p-6 rounded-2xl glass-panel space-y-2.5 sm:space-y-3">
-        <h3 class="font-serif font-bold text-base sm:text-lg text-white flex items-center space-x-2">
-          <Heart class="w-4 h-4 text-romance-400" />
-          <span>Synopsis</span>
-        </h3>
-        <p class="text-night-300 text-xs sm:text-sm lg:text-base leading-relaxed">
-          {{ manga.synopsis }}
-        </p>
-      </div>
-
-      <!-- Mobile Meta Info Card (< md only) -->
-      <div class="md:hidden p-4 rounded-2xl glass-panel grid grid-cols-2 gap-3 text-xs">
-        <div>
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Author</span>
-          <span class="text-white font-medium">{{ manga.author }}</span>
-        </div>
-        <div>
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Artist</span>
-          <span class="text-white font-medium">{{ manga.artist }}</span>
-        </div>
-        <div v-if="manga.releaseYear">
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Release Year</span>
-          <span class="text-white font-medium">{{ manga.releaseYear }}</span>
-        </div>
-        <div>
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Status</span>
-          <span class="text-emerald-400 font-medium">{{ manga.status }}</span>
-        </div>
-        <div>
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Total Views</span>
-          <span class="text-white font-medium">{{ formatViews(manga.views) }}</span>
-        </div>
-        <div>
-          <span class="text-night-400 block text-[10px] uppercase tracking-wider">Bookmarks</span>
-          <span class="text-romance-300 font-medium">{{ formatViews(manga.bookmarks || '0') }}</span>
-        </div>
-      </div>
-
-      <!-- Chapters List Section -->
-      <div class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-night-850 gap-2.5">
-          <div class="flex items-center space-x-2">
-            <ListOrdered class="w-5 h-5 text-romance-400" />
-            <h2 class="font-serif text-lg sm:text-xl font-bold text-white">Chapters ({{ publishedChapters.length }})</h2>
+          <div v-else class="p-8 rounded-2xl bg-night-900/60 border border-night-800 text-center text-xs text-night-400">
+            No published chapters available yet for this title.
           </div>
-          
-          <input 
-            v-model="chapterSearch" 
-            type="text" 
-            placeholder="Search chapter..."
-            class="bg-night-900 border border-night-800 rounded-xl px-3 py-2 sm:py-1.5 text-xs text-night-100 placeholder-night-500 focus:outline-none focus:border-romance-500 w-full sm:w-48"
-          />
         </div>
 
-        <!-- Clean SEO Chapter Links -->
-        <div v-if="filteredChapters.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-          <NuxtLink 
-            v-for="ch in filteredChapters" 
-            :key="ch.number"
-            :to="`/webtoon/${manga.slug || manga.id}/chapter-${ch.number}`"
-            class="p-3.5 sm:p-4 rounded-xl bg-night-900 hover:bg-night-850 border border-night-800/80 hover:border-romance-500/50 flex items-center justify-between group transition-all"
-          >
-            <div class="flex items-center space-x-3 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-night-800 group-hover:bg-romance-600/20 group-hover:text-romance-400 text-night-300 flex items-center justify-center font-mono text-xs font-bold transition-colors shrink-0">
-                {{ ch.number }}
-              </div>
-              <div class="min-w-0">
-                <h4 class="text-xs sm:text-sm font-semibold text-night-100 group-hover:text-romance-300 transition-colors line-clamp-1">
-                  {{ ch.title || `Chapter ${ch.number}` }}
-                </h4>
-                <p class="text-[10px] text-night-400 mt-0.5 flex items-center space-x-1.5">
-                  <span>{{ ch.releaseDate || 'Published' }}</span>
-                  <span v-if="ch.views" class="text-night-500">• {{ formatViews(ch.views) }} views</span>
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-center space-x-2 text-night-400 group-hover:text-romance-400 shrink-0">
-              <ChevronRight class="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </NuxtLink>
-        </div>
-
-        <div v-else class="p-8 rounded-2xl bg-night-900/60 border border-night-800 text-center text-xs text-night-400">
-          No published chapters available matching your search.
-        </div>
       </div>
-
     </div>
   </div>
 
