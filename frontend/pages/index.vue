@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-12">
     <!-- Hero Banner for Featured Romance (if any published) -->
-    <HeroBanner v-if="featuredManga" :featured="featuredManga" />
+    <HeroBanner v-if="featuredList.length > 0" :items="featuredList" />
 
     <!-- Genre Filter Pills -->
     <div v-if="mangas.length > 0" class="flex items-center space-x-2 overflow-x-auto pb-2 custom-scroll">
@@ -97,8 +97,8 @@ onMounted(() => {
   loadMangas()
 })
 
-const featuredManga = computed(() => {
-  return mangas.value.length > 0 ? mangas.value[0] : null
+const featuredList = computed(() => {
+  return mangas.value.slice(0, 5)
 })
 
 const filteredMangas = computed(() => {
