@@ -6,7 +6,7 @@
     />
   </div>
   <div v-else-if="isLoading" class="min-h-screen flex items-center justify-center bg-night-950">
-    <div class="text-romance-400 animate-pulse text-sm font-medium">Loading chapter pages from Cloudflare R2...</div>
+    <div class="text-romance-400 animate-pulse text-sm font-medium">Loading chapter pages...</div>
   </div>
   <div v-else class="min-h-screen flex items-center justify-center text-center p-6 bg-night-950">
     <div class="space-y-4">

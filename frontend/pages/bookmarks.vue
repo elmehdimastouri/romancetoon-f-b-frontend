@@ -63,7 +63,7 @@
       </div>
 
       <div class="text-[11px] text-night-500">
-        Saved securely in your browser's local storage
+        Saved locally on this device
       </div>
     </div>
 

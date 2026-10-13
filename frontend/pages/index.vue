@@ -42,21 +42,22 @@
       </div>
     </section>
 
-    <!-- Empty State when no titles are published yet in MySQL -->
-    <div v-else-if="!isLoading" class="min-h-[420px] p-8 rounded-3xl glass-panel text-center flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto my-12 border border-white/10 shadow-2xl">
+    <!-- Visitor-facing Empty State -->
+    <div v-else-if="!isLoading" class="min-h-[380px] p-8 rounded-3xl glass-panel text-center flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto my-12 border border-white/10 shadow-2xl">
       <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-romance-600/30 to-rose-500/20 border border-romance-500/40 flex items-center justify-center text-romance-400">
         <Heart class="w-8 h-8 fill-romance-500/30 animate-pulse" />
       </div>
-      <h3 class="font-serif text-2xl font-bold text-white">Your Romance Catalog is Ready</h3>
+      <h3 class="font-serif text-2xl font-bold text-white">New Romance Releases Coming Soon</h3>
       <p class="text-xs sm:text-sm text-night-400 leading-relaxed max-w-md">
-        Your database is connected and active. You can now publish your first romance webtoon title and scan chapters directly from Cloudflare R2!
+        We are preparing captivating romance manhwas and love stories for you. Check back shortly for the latest releases!
       </p>
-      <NuxtLink 
-        to="/mastouri" 
-        class="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 text-white font-semibold text-xs shadow-glow-pink flex items-center space-x-2 transition-all transform hover:-translate-y-0.5"
+      <button 
+        v-if="selectedGenre !== 'All Romance'" 
+        @click="selectedGenre = 'All Romance'"
+        class="mt-2 px-5 py-2.5 rounded-xl bg-night-850 hover:bg-night-800 text-romance-300 border border-night-800 text-xs font-medium transition-colors"
       >
-        <span>Open Management Hub (/mastouri)</span>
-      </NuxtLink>
+        Show All Romance Titles
+      </button>
     </div>
 
     <!-- Loading Skeleton -->

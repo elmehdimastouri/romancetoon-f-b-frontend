@@ -8,7 +8,7 @@
   <div v-else-if="isLoading" class="min-h-screen flex items-center justify-center bg-night-950">
     <div class="text-center space-y-3">
       <div class="w-10 h-10 border-4 border-romance-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-romance-300 text-xs font-mono">Loading chapter from Cloudflare R2...</p>
+      <p class="text-romance-300 text-xs font-medium">Loading chapter pages...</p>
     </div>
   </div>
   <div v-else class="min-h-screen flex items-center justify-center text-center p-6 bg-night-950">
