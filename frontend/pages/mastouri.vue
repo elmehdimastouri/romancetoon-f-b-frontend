@@ -676,7 +676,10 @@ import {
 } from '@lucide/vue'
 
 useHead({
-  title: 'RomanceToon Publisher Suite | /mastouri'
+  title: 'RomanceToon Publisher Suite | /mastouri',
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' }
+  ]
 })
 
 const { 

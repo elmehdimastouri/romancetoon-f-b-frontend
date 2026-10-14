@@ -189,7 +189,8 @@ import { useReadingTracker, type BookmarkItem } from '~/composables/useReadingTr
 useHead({
   title: 'My Bookmarks | RomanceToon',
   meta: [
-    { name: 'description', content: 'Your saved romance webtoons and manhwa collection.' }
+    { name: 'description', content: 'Your saved romance webtoons and manhwa collection.' },
+    { name: 'robots', content: 'noindex, nofollow' }
   ]
 })
 

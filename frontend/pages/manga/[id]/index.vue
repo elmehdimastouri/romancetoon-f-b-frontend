@@ -205,6 +205,15 @@ onMounted(async () => {
   }
 })
 
+useHead(() => ({
+  meta: [
+    { name: 'robots', content: 'noindex, follow' }
+  ],
+  link: manga.value ? [
+    { rel: 'canonical', href: `https://romancetoon.com/webtoon/${manga.value.slug || manga.value.id}` }
+  ] : []
+}))
+
 const publishedChapters = computed(() => {
   if (!manga.value || !manga.value.chapters) return []
   return manga.value.chapters.filter((c: any) => c.isPublished !== false)

@@ -70,7 +70,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRomanceApi } from '~/composables/useApi'
+import { useSeo } from '~/composables/useSeo'
 import { Heart } from '@lucide/vue'
+
+const { setPageSeo, getWebSiteSchema, getOrganizationSchema } = useSeo()
+
+// Configure Homepage SEO & JSON-LD Rich Snippets
+setPageSeo({
+  title: 'RomanceToon - Read Romantic Webtoons & Romance Manga Online',
+  description: 'Read sweet, villainess, fantasy, historical, and modern romance webtoons online in high definition. Discover trending romantic manhwa, daily chapters, and love stories at RomanceToon.',
+  canonicalPath: '/',
+  ogType: 'website',
+  jsonLd: [
+    getWebSiteSchema(),
+    getOrganizationSchema()
+  ]
+})
 
 const { fetchMangas } = useRomanceApi()
 

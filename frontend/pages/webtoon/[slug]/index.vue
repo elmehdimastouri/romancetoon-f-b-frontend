@@ -497,15 +497,81 @@ import { useReadingTracker } from '~/composables/useReadingTracker'
 import { formatViews } from '~/utils/formatters'
 import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark, Check } from '@lucide/vue'
 import RecommendedManga from '~/components/RecommendedManga.vue'
+import { useSeo } from '~/composables/useSeo'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 const { fetchManga, rateManga, fetchMangaRating, recordView } = useRomanceApi()
 const { getHistoryForManga, isBookmarked, toggleBookmark, getUserFingerprint, getUserRating, setUserRating } = useReadingTracker()
+const { SITE_NAME, cleanDescription, getCanonicalUrl, getComicSeriesSchema, getBreadcrumbSchema } = useSeo()
 
 const manga = ref<any>(null)
 const isLoading = ref(true)
 const chapterSearch = ref('')
+
+// Reactive SEO Metadata, OpenGraph & Structured Data
+useHead(() => {
+  if (!manga.value) {
+    return {
+      title: 'Loading Romance Webtoon... | RomanceToon',
+      meta: [{ name: 'robots', content: 'noindex, follow' }]
+    }
+  }
+
+  const m = manga.value
+  const pageTitle = `Read ${m.title} Webtoon Online | ${SITE_NAME}`
+  const pageDesc = cleanDescription(
+    `${m.title}: ${m.synopsis || ''}. Read all latest chapters of ${m.title} online in English with high definition quality on RomanceToon.`
+  )
+  const canonicalUrl = getCanonicalUrl(`/webtoon/${m.slug || m.id}`)
+  const coverImage = m.cover || 'https://romancetoon.com/favicon.ico'
+  const genresList = (m.genres || []).join(', ')
+
+  const breadcrumbs = getBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: 'Webtoons', path: '/popular' },
+    { name: m.title, path: `/webtoon/${m.slug || m.id}` }
+  ])
+
+  const seriesSchema = getComicSeriesSchema(m)
+
+  return {
+    title: pageTitle,
+    meta: [
+      { name: 'description', content: pageDesc },
+      { name: 'keywords', content: `${m.title}, read ${m.title}, ${m.title} webtoon, ${m.title} manhwa, ${m.title} online, ${genresList}, romance manhwa` },
+      { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
+      // Open Graph
+      { property: 'og:site_name', content: SITE_NAME },
+      { property: 'og:type', content: 'book' },
+      { property: 'og:title', content: `${m.title} - Read Webtoon Online` },
+      { property: 'og:description', content: pageDesc },
+      { property: 'og:url', content: canonicalUrl },
+      { property: 'og:image', content: coverImage },
+      { property: 'og:image:alt', content: m.title },
+      { property: 'og:locale', content: 'en_US' },
+      // Twitter Card
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:site', content: '@RomanceToon' },
+      { name: 'twitter:title', content: `${m.title} - Read Webtoon Online` },
+      { name: 'twitter:description', content: pageDesc },
+      { name: 'twitter:image', content: coverImage }
+    ],
+    link: [
+      { rel: 'canonical', href: canonicalUrl }
+    ],
+    script: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(breadcrumbs)
+      },
+      ...(seriesSchema ? [{
+        type: 'application/ld+json',
+        children: JSON.stringify(seriesSchema)
+      }] : [])
+    ]
+  }
+})
 
 // Interactive Rating States
 const hoverRating = ref(0)

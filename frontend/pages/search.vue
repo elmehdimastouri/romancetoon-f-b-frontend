@@ -150,9 +150,13 @@ const filteredResults = computed(() => {
 })
 
 useHead(() => ({
-  title: searchTerm.value ? `Search: "${searchTerm.value}" | RomanceToon` : 'Search Romance Webtoons | RomanceToon',
+  title: searchTerm.value ? `Search: "${searchTerm.value}" | RomanceToon` : 'Search Romance Webtoons & Manhwa | RomanceToon',
   meta: [
-    { name: 'description', content: 'Search across thousands of romance manhwa and webtoon chapters.' }
+    { name: 'description', content: 'Search across thousands of romance manhwa and webtoon chapters on RomanceToon.' },
+    { name: 'robots', content: 'noindex, follow' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://romancetoon.com/search' }
   ]
 }))
 </script>

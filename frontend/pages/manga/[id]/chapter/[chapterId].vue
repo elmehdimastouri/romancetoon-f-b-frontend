@@ -94,6 +94,12 @@ watch(() => [route.params.id, route.params.chapterId], () => {
 useHead(() => ({
   title: currentChapter.value && manga.value 
     ? `${manga.value.title} - Chapter ${currentChapter.value.number} | RomanceToon`
-    : 'Read Chapter | RomanceToon'
+    : 'Read Chapter | RomanceToon',
+  meta: [
+    { name: 'robots', content: 'noindex, follow' }
+  ],
+  link: (manga.value && currentChapter.value) ? [
+    { rel: 'canonical', href: `https://romancetoon.com/webtoon/${manga.value.slug || manga.value.id}/chapter-${currentChapter.value.number}` }
+  ] : []
 }))
 </script>

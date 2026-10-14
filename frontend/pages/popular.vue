@@ -68,6 +68,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { Flame, Sparkles } from '@lucide/vue'
 import { useRomanceApi } from '~/composables/useApi'
+import { useSeo } from '~/composables/useSeo'
+
+const { setPageSeo, getBreadcrumbSchema, getCollectionSchema } = useSeo()
+
+setPageSeo({
+  title: 'Most Popular Romance Webtoons & Trending Manhwa',
+  description: 'Explore top-ranked and trending romance webtoons, manga, and manhwa voted by readers. Read popular love stories, villainess, and high-rated romance chapters online on RomanceToon.',
+  canonicalPath: '/popular',
+  keywords: 'popular romance webtoons, top romance manhwa, best romance manga, trending webtoons, read manhwa online',
+  ogType: 'website',
+  jsonLd: [
+    getBreadcrumbSchema([
+      { name: 'Home', path: '/' },
+      { name: 'Popular', path: '/popular' }
+    ]),
+    getCollectionSchema(
+      'Most Popular Romance Webtoons & Trending Manhwa',
+      'Top-ranked and most-read romance webtoons and manhwa ranked by popularity, views, and ratings.',
+      '/popular'
+    )
+  ]
+})
 
 const { fetchMangas } = useRomanceApi()
 
@@ -101,12 +123,5 @@ const sortedMangas = computed(() => {
     if (viewsB !== viewsA) return viewsB - viewsA
     return (Number(b.rating) || 0) - (Number(a.rating) || 0)
   })
-})
-
-useHead({
-  title: 'Most Loved Romance Webtoons | RomanceToon',
-  meta: [
-    { name: 'description', content: 'Explore the top ranked romance manhwa and webtoon titles on RomanceToon.' }
-  ]
 })
 </script>

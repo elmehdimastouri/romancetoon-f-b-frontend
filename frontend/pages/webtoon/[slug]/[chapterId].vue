@@ -29,12 +29,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRomanceApi } from '~/composables/useApi'
 import { useReadingTracker } from '~/composables/useReadingTracker'
+import { useSeo } from '~/composables/useSeo'
 
 definePageMeta({
   layout: 'reader'
 })
 
 const route = useRoute()
+const { SITE_NAME, cleanDescription, getCanonicalUrl, getComicIssueSchema, getBreadcrumbSchema } = useSeo()
 
 const slug = computed(() => {
   const s = route.params.slug
@@ -108,9 +110,65 @@ watch(() => [route.params.slug, route.params.chapterId], () => {
   loadChapter()
 })
 
-useHead(() => ({
-  title: currentChapter.value && manga.value 
-    ? `${manga.value.title} - Chapter ${currentChapter.value.number} | RomanceToon`
-    : `Read Chapter ${chapterNumber.value} | RomanceToon`
-}))
+useHead(() => {
+  if (!manga.value || !currentChapter.value) {
+    return {
+      title: `Read Chapter ${chapterNumber.value} | ${SITE_NAME}`,
+      meta: [{ name: 'robots', content: 'noindex, follow' }]
+    }
+  }
+
+  const m = manga.value
+  const c = currentChapter.value
+  const pageTitle = `${m.title} Chapter ${c.number} - Read Online | ${SITE_NAME}`
+  const pageDesc = cleanDescription(
+    `Read ${m.title} Chapter ${c.number} online in English with full-color HD pages. Next chapter and all episodes available at RomanceToon.`
+  )
+  const canonicalUrl = getCanonicalUrl(`/webtoon/${m.slug || m.id}/chapter-${c.number}`)
+  const coverImage = m.cover || 'https://romancetoon.com/favicon.ico'
+
+  const breadcrumbs = getBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: m.title, path: `/webtoon/${m.slug || m.id}` },
+    { name: `Chapter ${c.number}`, path: `/webtoon/${m.slug || m.id}/chapter-${c.number}` }
+  ])
+
+  const chapterSchema = getComicIssueSchema(m, c)
+
+  return {
+    title: pageTitle,
+    meta: [
+      { name: 'description', content: pageDesc },
+      { name: 'keywords', content: `${m.title} chapter ${c.number}, read ${m.title} ${c.number}, ${m.title} ch ${c.number}, ${m.title} manga online` },
+      { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
+      // Open Graph
+      { property: 'og:site_name', content: SITE_NAME },
+      { property: 'og:type', content: 'article' },
+      { property: 'og:title', content: pageTitle },
+      { property: 'og:description', content: pageDesc },
+      { property: 'og:url', content: canonicalUrl },
+      { property: 'og:image', content: coverImage },
+      { property: 'og:locale', content: 'en_US' },
+      // Twitter Card
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:site', content: '@RomanceToon' },
+      { name: 'twitter:title', content: pageTitle },
+      { name: 'twitter:description', content: pageDesc },
+      { name: 'twitter:image', content: coverImage }
+    ],
+    link: [
+      { rel: 'canonical', href: canonicalUrl }
+    ],
+    script: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(breadcrumbs)
+      },
+      ...(chapterSchema ? [{
+        type: 'application/ld+json',
+        children: JSON.stringify(chapterSchema)
+      }] : [])
+    ]
+  }
+})
 </script>

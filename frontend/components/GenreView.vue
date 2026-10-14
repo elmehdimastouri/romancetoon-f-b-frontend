@@ -117,6 +117,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Sparkles, Heart } from '@lucide/vue'
 import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
+import { useSeo } from '~/composables/useSeo'
 
 const props = defineProps<{
   currentSlug?: string
@@ -225,30 +226,73 @@ const filteredMangas = computed(() => {
   })
 })
 
-// Dynamic SEO Head
-useHead(() => {
-  const title = activeGenreName.value 
-    ? `${activeGenreName.value} Romance Webtoons & Manhwa | RomanceToon`
-    : 'Romance Genres & Categories | RomanceToon'
-  
-  const description = activeGenreName.value
-    ? `Explore the best ${activeGenreName.value} romance webtoons, manga, and manhwa. Read free HD chapters on RomanceToon.`
-    : 'Explore all romance webtoons categorized by tropes, genres, and themes on RomanceToon.'
+// Dynamic SEO Head & Structured Data
+const { SITE_NAME, cleanDescription, getCanonicalUrl, getCollectionSchema, getBreadcrumbSchema } = useSeo()
 
-  const canonical = activeGenreName.value
-    ? `https://romancetoon.com/genres/${normalizedCurrentSlug.value}/`
-    : 'https://romancetoon.com/genres/'
+useHead(() => {
+  const isSpecificGenre = Boolean(normalizedCurrentSlug.value && activeGenreName.value)
+  const title = isSpecificGenre
+    ? `${activeGenreName.value} Romance Webtoons & Manhwa | ${SITE_NAME}`
+    : `Romance Webtoon Genres & Categories | ${SITE_NAME}`
+  
+  const description = cleanDescription(
+    isSpecificGenre
+      ? `Explore the best ${activeGenreName.value} romance webtoons, manga, and manhwa. Read top-rated ${activeGenreName.value} love stories and daily chapters on RomanceToon.`
+      : 'Explore romance webtoons categorized by tropes, genres, and themes including historical, villainess, fantasy, and contract marriage on RomanceToon.'
+  )
+
+  const canonicalPath = isSpecificGenre
+    ? `/genres/${normalizedCurrentSlug.value}/`
+    : '/genres/'
+
+  const canonical = getCanonicalUrl(canonicalPath)
+
+  const breadcrumbsList = isSpecificGenre
+    ? [
+        { name: 'Home', path: '/' },
+        { name: 'Genres', path: '/genres/' },
+        { name: activeGenreName.value, path: canonicalPath }
+      ]
+    : [
+        { name: 'Home', path: '/' },
+        { name: 'Genres', path: '/genres/' }
+      ]
+
+  const breadcrumbsSchema = getBreadcrumbSchema(breadcrumbsList)
+  const collectionSchema = getCollectionSchema(title, description, canonicalPath)
 
   return {
     title,
     meta: [
       { name: 'description', content: description },
+      { name: 'keywords', content: `${activeGenreName.value || 'romance'} webtoons, ${activeGenreName.value || 'romance'} manhwa, romance genres, read manhwa online` },
+      { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
+      // Open Graph
+      { property: 'og:site_name', content: SITE_NAME },
+      { property: 'og:type', content: 'website' },
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
-      { property: 'og:url', content: canonical }
+      { property: 'og:url', content: canonical },
+      { property: 'og:image', content: 'https://romancetoon.com/favicon.ico' },
+      { property: 'og:locale', content: 'en_US' },
+      // Twitter Card
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:site', content: '@RomanceToon' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description }
     ],
     link: [
       { rel: 'canonical', href: canonical }
+    ],
+    script: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(breadcrumbsSchema)
+      },
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(collectionSchema)
+      }
     ]
   }
 })

@@ -176,7 +176,8 @@ import { useRomanceApi } from '~/composables/useApi'
 useHead({
   title: 'Reading History | RomanceToon',
   meta: [
-    { name: 'description', content: 'Track your romance webtoon and manhwa reading progress.' }
+    { name: 'description', content: 'Track your romance webtoon and manhwa reading progress.' },
+    { name: 'robots', content: 'noindex, nofollow' }
   ]
 })
 
