@@ -113,14 +113,15 @@ watch(() => [route.params.slug, route.params.chapterId], () => {
 useHead(() => {
   if (!manga.value || !currentChapter.value) {
     return {
-      title: `Read Chapter ${chapterNumber.value} | ${SITE_NAME}`,
+      title: `Read Chapter ${chapterNumber.value} Online - ${SITE_NAME}`,
       meta: [{ name: 'robots', content: 'noindex, follow' }]
     }
   }
 
   const m = manga.value
   const c = currentChapter.value
-  const pageTitle = `${m.title} Chapter ${c.number} - Read Online | ${SITE_NAME}`
+  const chapterHeading = `Read ${m.title} Chapter ${c.number} Online`
+  const pageTitle = `${chapterHeading} - ${SITE_NAME}`
   const pageDesc = cleanDescription(
     `Read ${m.title} Chapter ${c.number} online in English with full-color HD pages. Next chapter and all episodes available at RomanceToon.`
   )
@@ -130,10 +131,13 @@ useHead(() => {
   const breadcrumbs = getBreadcrumbSchema([
     { name: 'Home', path: '/' },
     { name: m.title, path: `/webtoon/${m.slug || m.id}` },
-    { name: `Chapter ${c.number}`, path: `/webtoon/${m.slug || m.id}/chapter-${c.number}` }
+    { name: chapterHeading, path: `/webtoon/${m.slug || m.id}/chapter-${c.number}` }
   ])
 
   const chapterSchema = getComicIssueSchema(m, c)
+  if (chapterSchema) {
+    chapterSchema.name = chapterHeading
+  }
 
   return {
     title: pageTitle,

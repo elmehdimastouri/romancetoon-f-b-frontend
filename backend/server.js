@@ -164,7 +164,7 @@ app.get('/api/mangas', async (req, res) => {
           chapters: chRows.map(c => ({
             id: c.chapter_number.toString(),
             number: c.chapter_number,
-            title: c.title,
+            title: (!c.title || c.title === `Chapter ${c.chapter_number}`) ? `Read ${r.title} Chapter ${c.chapter_number} Online` : c.title,
             releaseDate: c.release_date,
             isPublished: Boolean(c.is_published),
             status: c.status
@@ -200,7 +200,7 @@ app.get('/api/mangas/:id', async (req, res) => {
         manga.chapters = chapRows.map(c => ({
           id: c.chapter_number.toString(),
           number: c.chapter_number,
-          title: c.title,
+          title: (!c.title || c.title === `Chapter ${c.chapter_number}`) ? `Read ${manga.title} Chapter ${c.chapter_number} Online` : c.title,
           releaseDate: c.release_date,
           views: c.views,
           pagesCount: c.pages_count,
@@ -923,7 +923,8 @@ app.post('/api/r2/publish-chapters', async (req, res) => {
     const chapterNumber = parseInt(ch.chapterNumber, 10)
     const isPublished = ch.status === 'published'
     const pagesCount = (ch.pages && ch.pages.length) || 0
-    const title = ch.title || `Chapter ${chapterNumber}`
+    const defaultTitle = manga ? `Read ${manga.title} Chapter ${chapterNumber} Online` : `Chapter ${chapterNumber}`
+    const title = ch.title || defaultTitle
     const releaseDate = ch.releaseDate || (isPublished ? 'Today' : 'Scheduled')
 
     if (isPublished) publishedCount++
@@ -1056,7 +1057,10 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
           'SELECT chapter_number as number, title, release_date as releaseDate, is_published as isPublished FROM chapters WHERE manga_id = ? AND is_published = 1 ORDER BY chapter_number ASC',
           [manga.id]
         )
-        manga.chapters = allChapters
+        manga.chapters = allChapters.map(ch => ({
+          ...ch,
+          title: (!ch.title || ch.title === `Chapter ${ch.number}`) ? `Read ${manga.title} Chapter ${ch.number} Online` : ch.title
+        }))
 
         const [cRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? AND chapter_number = ?', [manga.id, chapterNum])
         if (cRows.length > 0) {
@@ -1073,7 +1077,7 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
             chapter: {
               id: c.chapter_number.toString(),
               number: c.chapter_number,
-              title: c.title,
+              title: (!c.title || c.title === `Chapter ${c.chapter_number}`) ? `Read ${manga.title} Chapter ${c.chapter_number} Online` : c.title,
               releaseDate: c.release_date,
               views: c.views,
               pagesCount: c.pages_count,
@@ -1107,9 +1111,16 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
       genres: manga.genres || [],
       author: manga.author || '',
       artist: manga.artist || '',
-      rating: manga.rating || '5.0'
+      rating: manga.rating || '5.0',
+      chapters: (manga.chapters || []).map(ch => ({
+        ...ch,
+        title: (!ch.title || ch.title === `Chapter ${ch.number}`) ? `Read ${manga.title} Chapter ${ch.number} Online` : ch.title
+      }))
     },
-    chapter
+    chapter: {
+      ...chapter,
+      title: (!chapter.title || chapter.title === `Chapter ${chapter.number}`) ? `Read ${manga.title} Chapter ${chapter.number} Online` : chapter.title
+    }
   })
 })
 

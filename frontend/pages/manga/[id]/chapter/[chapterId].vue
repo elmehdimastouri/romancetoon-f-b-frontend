@@ -93,8 +93,8 @@ watch(() => [route.params.id, route.params.chapterId], () => {
 
 useHead(() => ({
   title: currentChapter.value && manga.value 
-    ? `${manga.value.title} - Chapter ${currentChapter.value.number} | RomanceToon`
-    : 'Read Chapter | RomanceToon',
+    ? `Read ${manga.value.title} Chapter ${currentChapter.value.number} Online - RomanceToon`
+    : 'Read Chapter Online - RomanceToon',
   meta: [
     { name: 'robots', content: 'noindex, follow' }
   ],

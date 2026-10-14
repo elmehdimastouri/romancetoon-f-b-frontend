@@ -998,8 +998,11 @@ const handleScanR2 = async () => {
   try {
     const result = await scanR2(scanMangaFolder.value)
     if (result.success && Array.isArray(result.chapters)) {
+      const targetManga = mangas.value.find(m => m.id === scanTargetMangaId.value)
+      const mangaTitle = targetManga?.title || ''
       scannedChapters.value = result.chapters.map((ch: any) => ({
         ...ch,
+        title: mangaTitle ? `Read ${mangaTitle} Chapter ${ch.chapterNumber} Online` : `Chapter ${ch.chapterNumber}`,
         status: 'published' // default to published
       }))
     } else {

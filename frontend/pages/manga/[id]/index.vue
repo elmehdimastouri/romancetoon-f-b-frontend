@@ -141,15 +141,16 @@
               v-for="ch in filteredChapters" 
               :key="ch.number"
               :to="`/manga/${manga.id}/chapter/${ch.number}`"
+              :title="`Read ${manga.title} Chapter ${ch.number} Online`"
               class="p-4 rounded-xl bg-night-900 hover:bg-night-850 border border-night-800/80 hover:border-romance-500/50 flex items-center justify-between group transition-all"
             >
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-lg bg-night-800 group-hover:bg-romance-600/20 group-hover:text-romance-400 text-night-300 flex items-center justify-center font-mono text-xs font-bold transition-colors">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-night-800 group-hover:bg-romance-600/20 group-hover:text-romance-400 text-night-300 flex items-center justify-center font-mono text-xs font-bold transition-colors shrink-0">
                   {{ ch.number }}
                 </div>
-                <div>
+                <div class="min-w-0">
                   <h4 class="text-xs sm:text-sm font-semibold text-night-100 group-hover:text-romance-300 transition-colors line-clamp-1">
-                    {{ ch.title || `Chapter ${ch.number}` }}
+                    {{ ch.title || `Read ${manga.title} Chapter ${ch.number} Online` }}
                   </h4>
                   <p class="text-[10px] text-night-400 mt-0.5">{{ ch.releaseDate || 'Published' }}</p>
                 </div>
