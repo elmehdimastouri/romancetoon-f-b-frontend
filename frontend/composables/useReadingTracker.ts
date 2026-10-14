@@ -197,18 +197,23 @@ export function useReadingTracker() {
 
     const chapterTitle = chapter.title || `Chapter ${chNum}`
 
+    // Check existing history and bookmarks to ensure cover is never lost
+    const existing = history.value.find(h => h.id === id || h.slug === slug)
+    const bm = bookmarks.value.find(b => b.id === id || b.slug === slug)
+    const cover = manga.cover || (existing && existing.cover) || (bm && bm.cover) || ''
+
     // Remove existing history item for this manga so we can place it at the very top
     history.value = history.value.filter(h => h.id !== id && h.slug !== slug)
 
     const item: HistoryItem = {
       id,
       slug,
-      title: manga.title || 'Untitled',
-      cover: manga.cover || '',
+      title: manga.title || (existing && existing.title) || 'Untitled',
+      cover,
       chapterNumber: chNum,
       chapterTitle,
       lastReadAt: Date.now(),
-      totalChapters: Array.isArray(manga.chapters) ? manga.chapters.length : undefined
+      totalChapters: Array.isArray(manga.chapters) ? manga.chapters.length : (existing ? existing.totalChapters : undefined)
     }
 
     history.value.unshift(item)
@@ -218,6 +223,25 @@ export function useReadingTracker() {
     }
 
     saveHistoryToStorage()
+  }
+
+  // Backfill missing covers in stored history from live manga catalog
+  const syncHistoryCovers = (catalog: any[]) => {
+    if (!Array.isArray(catalog) || catalog.length === 0) return
+    let updated = false
+    history.value = history.value.map(item => {
+      if (!item.cover) {
+        const found = catalog.find(m => m && (m.id === item.id || m.slug === item.slug || m.slug === item.id || m.id === item.slug))
+        if (found && found.cover) {
+          updated = true
+          return { ...item, cover: found.cover }
+        }
+      }
+      return item
+    })
+    if (updated) {
+      saveHistoryToStorage()
+    }
   }
 
   const getHistoryForManga = (idOrSlug: string): HistoryItem | undefined => {
@@ -296,6 +320,7 @@ export function useReadingTracker() {
     clearBookmarks,
     // History
     recordHistory,
+    syncHistoryCovers,
     getHistoryForManga,
     removeFromHistory,
     clearHistory,

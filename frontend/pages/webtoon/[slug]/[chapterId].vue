@@ -70,12 +70,20 @@ const loadChapter = async () => {
   try {
     const data = await fetchChapter(slug.value, chapterNumber.value)
     if (data && data.chapter) {
-      manga.value = data.manga
+      const mangaData = { ...data.manga }
+      if (!mangaData.cover) {
+        const catalog = useState<any[]>('global_mangas_list', () => []).value
+        const found = catalog.find((m: any) => m && (m.id === mangaData.id || m.slug === mangaData.slug || m.slug === slug.value))
+        if (found && found.cover) {
+          mangaData.cover = found.cover
+        }
+      }
+      manga.value = mangaData
       currentChapter.value = data.chapter
       // Automatically record reading progress into local storage history
-      recordHistory(data.manga, data.chapter)
+      recordHistory(mangaData, data.chapter)
       // Record view for this chapter & manga
-      recordView(data.manga.id, data.chapter.number)
+      recordView(mangaData.id, data.chapter.number)
       if (process.client) {
         window.scrollTo({ top: 0, behavior: 'instant' })
       }

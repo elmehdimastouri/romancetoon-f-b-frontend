@@ -67,15 +67,20 @@
         <!-- Cover thumbnail -->
         <NuxtLink 
           :to="`/webtoon/${item.slug || item.id}`"
-          class="w-20 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden bg-night-950 shrink-0 relative group-hover:scale-102 transition-transform"
+          class="w-20 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden bg-night-950 shrink-0 relative group-hover:scale-102 transition-transform border border-white/5"
         >
           <img 
-            :src="item.cover" 
+            v-if="getCover(item)"
+            :src="getCover(item)" 
             :alt="item.title" 
             loading="lazy"
             class="w-full h-full object-cover"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div v-else class="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-night-950 text-night-500">
+            <BookOpen class="w-6 h-6 text-romance-400/50 mb-1" />
+            <span class="text-[9px] text-night-400 font-serif line-clamp-2">{{ item.title }}</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
         </NuxtLink>
 
         <!-- Information & Actions -->
@@ -163,9 +168,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { History, Clock, BookOpen, Play, Trash2, Search, Sparkles } from '@lucide/vue'
 import { useReadingTracker } from '~/composables/useReadingTracker'
+import { useRomanceApi } from '~/composables/useApi'
 
 useHead({
   title: 'Reading History | RomanceToon',
@@ -174,9 +180,39 @@ useHead({
   ]
 })
 
-const { history, removeFromHistory, clearHistory, formatTimeAgo } = useReadingTracker()
+const { history, syncHistoryCovers, removeFromHistory, clearHistory, formatTimeAgo } = useReadingTracker()
+const { fetchMangas } = useRomanceApi()
+const allMangas = useState<any[]>('global_mangas_list', () => [])
 
 const searchQuery = ref('')
+
+// Load full manga catalog to backfill missing covers in stored history
+onMounted(async () => {
+  if (allMangas.value.length === 0) {
+    try {
+      const data = await fetchMangas()
+      if (Array.isArray(data)) {
+        allMangas.value = data
+      }
+    } catch (e) {
+      console.error('Failed to load manga catalog for history covers:', e)
+    }
+  }
+
+  // Automatically update and persist missing covers in localStorage
+  if (allMangas.value.length > 0) {
+    syncHistoryCovers(allMangas.value)
+  }
+})
+
+// Dynamic cover resolver with catalog fallback
+const getCover = (item: any) => {
+  if (item.cover && typeof item.cover === 'string' && item.cover.trim() !== '') {
+    return item.cover
+  }
+  const found = allMangas.value.find((m: any) => m && (m.id === item.id || m.slug === item.slug || m.slug === item.id))
+  return (found && found.cover) ? found.cover : ''
+}
 
 const confirmClear = () => {
   if (confirm('Are you sure you want to clear your reading history?')) {

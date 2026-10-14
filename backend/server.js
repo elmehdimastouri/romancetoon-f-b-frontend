@@ -1046,9 +1046,12 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
   if (status.isMysqlConnected) {
     try {
       const pool = getPool()
-      const [mRows] = await pool.query('SELECT id, title, slug, r2_folder_id FROM mangas WHERE id = ? OR slug = ? OR r2_folder_id = ?', [req.params.id, req.params.id, req.params.id])
+      const [mRows] = await pool.query('SELECT id, title, slug, r2_folder_id, cover, banner, genres, author, artist, rating FROM mangas WHERE id = ? OR slug = ? OR r2_folder_id = ?', [req.params.id, req.params.id, req.params.id])
       if (mRows.length > 0) {
         const manga = mRows[0]
+        if (manga.genres && typeof manga.genres === 'string') {
+          try { manga.genres = JSON.parse(manga.genres) } catch (e) { manga.genres = [] }
+        }
         const [allChapters] = await pool.query(
           'SELECT chapter_number as number, title, release_date as releaseDate, is_published as isPublished FROM chapters WHERE manga_id = ? AND is_published = 1 ORDER BY chapter_number ASC',
           [manga.id]
@@ -1095,7 +1098,17 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
 
   res.json({
     success: true,
-    manga: { id: manga.id, title: manga.title, slug: manga.slug },
+    manga: { 
+      id: manga.id, 
+      title: manga.title, 
+      slug: manga.slug,
+      cover: manga.cover || '',
+      banner: manga.banner || '',
+      genres: manga.genres || [],
+      author: manga.author || '',
+      artist: manga.artist || '',
+      rating: manga.rating || '5.0'
+    },
     chapter
   })
 })
