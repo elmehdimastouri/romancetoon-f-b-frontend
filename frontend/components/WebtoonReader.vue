@@ -225,6 +225,15 @@
           </NuxtLink>
         </div>
       </div>
+
+      <!-- You May Also Like Section (اسفل قارء الفصل) -->
+      <div class="mt-8 sm:mt-12 mx-3 sm:mx-4" @click.stop>
+        <RecommendedManga 
+          :currentManga="manga" 
+          :limit="4"
+          gridCols="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+        />
+      </div>
     </main>
 
     <!-- Floating Bottom Navigation Bar -->
@@ -353,6 +362,7 @@ import {
   Maximize, Minimize 
 } from '@lucide/vue'
 import { useReadingTracker } from '~/composables/useReadingTracker'
+import RecommendedManga from '~/components/RecommendedManga.vue'
 
 const props = defineProps<{
   manga: Manga

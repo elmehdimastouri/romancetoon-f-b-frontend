@@ -472,6 +472,9 @@
 
       </div>
     </div>
+
+    <!-- You May Also Like (قد يعجبك أيضا) Section -->
+    <RecommendedManga :currentManga="manga" :limit="6" />
   </div>
 
   <div v-else-if="isLoading" class="min-h-[400px] flex items-center justify-center">
@@ -493,6 +496,7 @@ import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
 import { useReadingTracker } from '~/composables/useReadingTracker'
 import { formatViews } from '~/utils/formatters'
 import { Star, BookOpen, Heart, ListOrdered, ChevronRight, Play, Bookmark, Check } from '@lucide/vue'
+import RecommendedManga from '~/components/RecommendedManga.vue'
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
