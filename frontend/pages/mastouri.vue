@@ -19,7 +19,7 @@
 
       <!-- Action items & Live Site link -->
       <div class="flex items-center space-x-3 text-xs">
-        <div class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 flex items-center space-x-2">
+        <div v-if="isAuthenticated" class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 flex items-center space-x-2">
           <BookOpen class="w-4 h-4 text-romance-400" />
           <span class="text-white font-bold">{{ mangas.length }} Live Titles</span>
         </div>
@@ -27,6 +27,15 @@
           <ExternalLink class="w-3.5 h-3.5" />
           <span>View Live Site</span>
         </NuxtLink>
+        <button 
+          v-if="isAuthenticated" 
+          @click="logout" 
+          class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-colors flex items-center space-x-1.5"
+          title="Lock / Logout"
+        >
+          <LogOut class="w-3.5 h-3.5" />
+          <span>Lock</span>
+        </button>
       </div>
     </div>
 
@@ -45,7 +54,7 @@
         <input 
           v-model="pinInput"
           type="password" 
-          placeholder="Enter Passkey (Default: mastouri2026)"
+          placeholder="Enter Passkey"
           class="w-full bg-night-900 border border-night-800 rounded-xl px-4 py-3 text-sm text-center text-white placeholder-night-500 focus:outline-none focus:border-romance-500 transition-colors"
           autofocus
         />
@@ -670,7 +679,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
 import { 
-  ShieldCheck, Lock, BookOpen, ExternalLink, Sparkles, 
+  ShieldCheck, Lock, LogOut, BookOpen, ExternalLink, Sparkles, 
   PlusCircle, Layers, CheckCircle, SearchCode, RefreshCw, 
   Pencil, Trash2, Tag 
 } from '@lucide/vue'
@@ -689,17 +698,37 @@ const {
 } = useRomanceApi()
 
 // Authentication Gate
+const AUTH_KEY = 'romancetoon_publisher_auth_v1'
 const isAuthenticated = ref(false)
 const pinInput = ref('')
 const authError = ref(false)
 
 const authenticate = () => {
-  if (pinInput.value.trim() === 'mastouri2026' || pinInput.value.trim() === 'mastouri') {
+  if (pinInput.value.trim() === '123698745.0aZ') {
     isAuthenticated.value = true
     authError.value = false
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.setItem(AUTH_KEY, 'true')
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
     loadLiveMangas()
   } else {
     authError.value = true
+  }
+}
+
+const logout = () => {
+  isAuthenticated.value = false
+  pinInput.value = ''
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.removeItem(AUTH_KEY)
+    }
+  } catch (e) {
+    // ignore
   }
 }
 
@@ -816,6 +845,14 @@ const loadLiveMangas = async () => {
 
 onMounted(() => {
   // If already authenticated in session
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage && sessionStorage.getItem(AUTH_KEY) === 'true') {
+      isAuthenticated.value = true
+    }
+  } catch (e) {
+    // ignore
+  }
+
   if (isAuthenticated.value) {
     loadLiveMangas()
   }
