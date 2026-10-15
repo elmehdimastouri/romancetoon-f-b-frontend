@@ -29,9 +29,9 @@
           <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="text-[11px] sm:text-xs text-night-400 hover:text-romance-400 truncate max-w-[130px] sm:max-w-md block">
             {{ manga.title }}
           </NuxtLink>
-          <div class="text-xs sm:text-base font-semibold text-white truncate max-w-[150px] sm:max-w-md" :title="`Read ${manga.title} Chapter ${currentChapter.number} Online`">
-            Read {{ manga.title }} Chapter {{ currentChapter.number }} Online
-          </div>
+          <h2 class="text-xs sm:text-base font-semibold text-white truncate max-w-[150px] sm:max-w-md">
+            {{ currentChapter.title || `Chapter ${currentChapter.number}` }}
+          </h2>
         </div>
       </div>
 
@@ -103,19 +103,6 @@
       @click="toggleControls"
       :class="['w-full transition-all duration-300 mx-auto px-0 pt-14 pb-28', readerWidth]"
     >
-      <!-- Chapter Title Header (SEO H1 & Reader Banner) -->
-      <div class="w-full text-center py-4 px-4 mb-4 bg-night-900/60 border border-night-800/80 rounded-2xl">
-        <NuxtLink :to="`/webtoon/${manga.slug || manga.id}`" class="text-xs text-romance-400 hover:underline font-medium inline-block mb-1">
-          {{ manga.title }}
-        </NuxtLink>
-        <h1 class="text-base sm:text-xl font-serif font-bold text-white tracking-wide">
-          Read {{ manga.title }} Chapter {{ currentChapter.number }} Online
-        </h1>
-        <p class="text-[11px] sm:text-xs text-night-400 mt-1">
-          Enjoy reading <span class="text-night-200 font-medium">{{ manga.title }}</span> Chapter {{ currentChapter.number }} in high definition with English translation on RomanceToon.
-        </p>
-      </div>
-
       <!-- Global alert when any page fails to load -->
       <div 
         v-if="failedCount > 0"
@@ -355,7 +342,7 @@
               <span class="w-7 h-7 rounded-lg bg-night-800 flex items-center justify-center font-mono text-[11px] text-romance-300">
                 {{ ch.number }}
               </span>
-              <span class="truncate max-w-[200px]">{{ ch.title || `Read ${manga.title} Chapter ${ch.number} Online` }}</span>
+              <span class="truncate max-w-[200px]">{{ ch.title || `Chapter ${ch.number}` }}</span>
             </div>
             <span class="text-[10px] text-night-400">{{ ch.releaseDate }}</span>
           </NuxtLink>
