@@ -11,7 +11,7 @@ dotenv.config()
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'u192061012_romancetoon',
-  password: process.env.DB_PASSWORD || process.env.DB_PASS || '123698745.0aZ',
+  password: process.env.DB_PASSWORD || process.env.DB_PASS || '',
   database: process.env.DB_NAME || 'u192061012_romancetoon',
   waitForConnections: true,
   connectionLimit: 10,
@@ -24,6 +24,14 @@ let isMysqlConnected = false
 export async function initMySQL() {
   try {
     pool = mysql.createPool(DB_CONFIG)
+    if (typeof pool.on === 'function') {
+      pool.on('error', (err) => {
+        console.warn('[!] MySQL pool notice:', err?.message || err)
+        if (err?.code === 'PROTOCOL_CONNECTION_LOST' || err?.code === 'ECONNRESET') {
+          isMysqlConnected = false
+        }
+      })
+    }
     const conn = await pool.getConnection()
     console.log('[✔] MySQL Database connected successfully to Hostinger!')
     isMysqlConnected = true

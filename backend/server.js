@@ -9,7 +9,7 @@ import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3'
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 3001
 
 // Middleware
 app.use(cors())
@@ -180,6 +180,34 @@ function smartNaturalCompare(a, b) {
   const numA = getNum(a)
   const numB = getNum(b)
   return numA !== numB ? numA - numB : a.localeCompare(b, undefined, { numeric: true })
+}
+
+// Defensive JSON parsing helpers to prevent runtime crashes on malformed data
+function safeJsonParse(val, fallback = []) {
+  if (!val) return fallback
+  if (Array.isArray(val)) return val
+  if (typeof val !== 'string') return fallback
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : [parsed]
+  } catch (e) {
+    if (val.includes(',')) {
+      return val.split(',').map(s => s.trim()).filter(Boolean)
+    }
+    return [val.trim()].filter(Boolean)
+  }
+}
+
+function safeJsonPages(val) {
+  if (!val) return []
+  if (Array.isArray(val)) return val
+  if (typeof val !== 'string') return []
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (e) {
+    return []
+  }
 }
 
 // R2 S3 Client helper
@@ -373,8 +401,8 @@ app.get('/api/mangas', async (req, res) => {
           ...r,
           releaseYear: r.release_year,
           r2FolderId: r.r2_folder_id,
-          alternativeTitles: r.alternative_titles ? JSON.parse(r.alternative_titles) : [],
-          genres: r.genres ? JSON.parse(r.genres) : [],
+          alternativeTitles: safeJsonParse(r.alternative_titles),
+          genres: safeJsonParse(r.genres),
           chapters: chRows.map(c => ({
             id: c.chapter_number.toString(),
             number: c.chapter_number,
@@ -409,8 +437,8 @@ app.get('/api/mangas/:id', async (req, res) => {
         const [chapRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? ORDER BY chapter_number ASC', [manga.id])
         manga.releaseYear = manga.release_year
         manga.r2FolderId = manga.r2_folder_id
-        manga.alternativeTitles = manga.alternative_titles ? JSON.parse(manga.alternative_titles) : []
-        manga.genres = manga.genres ? JSON.parse(manga.genres) : []
+        manga.alternativeTitles = safeJsonParse(manga.alternative_titles)
+        manga.genres = safeJsonParse(manga.genres)
         manga.chapters = chapRows.map(c => ({
           id: c.chapter_number.toString(),
           number: c.chapter_number,
@@ -420,7 +448,7 @@ app.get('/api/mangas/:id', async (req, res) => {
           pagesCount: c.pages_count,
           isPublished: Boolean(c.is_published),
           status: c.status,
-          pages: c.pages_json ? JSON.parse(c.pages_json) : []
+          pages: safeJsonPages(c.pages_json)
         }))
         return res.json({ success: true, data: manga })
       }
@@ -1394,9 +1422,7 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
       const [mRows] = await pool.query('SELECT id, title, slug, r2_folder_id, cover, banner, genres, author, artist, rating FROM mangas WHERE id = ? OR slug = ? OR r2_folder_id = ?', [req.params.id, req.params.id, req.params.id])
       if (mRows.length > 0) {
         const manga = mRows[0]
-        if (manga.genres && typeof manga.genres === 'string') {
-          try { manga.genres = JSON.parse(manga.genres) } catch (e) { manga.genres = [] }
-        }
+        manga.genres = safeJsonParse(manga.genres)
         const [allChapters] = await pool.query(
           'SELECT chapter_number as number, title, release_date as releaseDate, is_published as isPublished FROM chapters WHERE manga_id = ? AND is_published = 1 ORDER BY chapter_number ASC',
           [manga.id]
@@ -1406,10 +1432,10 @@ app.get('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
         const [cRows] = await pool.query('SELECT * FROM chapters WHERE manga_id = ? AND chapter_number = ?', [manga.id, chapterNum])
         if (cRows.length > 0) {
           const c = cRows[0]
-          const rawPages = c.pages_json ? JSON.parse(c.pages_json) : []
+          const rawPages = safeJsonPages(c.pages_json)
           const cleanPages = rawPages.map((p, idx) => ({
             page: p.page || idx + 1,
-            url: (p.url.startsWith('http://') || p.url.startsWith('https://')) ? p.url : `https://${p.url.replace(/^\/+/, '')}`
+            url: (p.url && (p.url.startsWith('http://') || p.url.startsWith('https://'))) ? p.url : `https://${(p.url || '').replace(/^\/+/, '')}`
           }))
 
           return res.json({
@@ -1464,3 +1490,12 @@ app.listen(PORT, () => {
   console.log(`[✔] Health check: http://localhost:${PORT}/`)
   console.log(`[✔] Database check: http://localhost:${PORT}/api/db-check`)
 })
+
+export {
+  app,
+  generateUnicodeSlug,
+  resolveUniqueMangaSlug,
+  getClientIp,
+  safeJsonParse,
+  safeJsonPages
+}
