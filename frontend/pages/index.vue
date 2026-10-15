@@ -89,8 +89,13 @@ setPageSeo({
 
 const { fetchMangas } = useRomanceApi()
 
-const mangas = ref<any[]>([])
-const isLoading = ref(true)
+// Use useAsyncData for SSR / SSG pre-rendering so crawler sees the cards & links
+const { data: mangasData, status } = await useAsyncData('home-mangas-list', () => fetchMangas(), {
+  default: () => []
+})
+
+const mangas = computed(() => mangasData.value || [])
+const isLoading = computed(() => status.value === 'pending')
 const selectedGenre = ref('All Romance')
 
 const filterGenres = computed(() => {
@@ -112,16 +117,6 @@ const filterGenres = computed(() => {
     'Fantasy',
     'Historical'
   ]
-})
-
-const loadMangas = async () => {
-  isLoading.value = true
-  mangas.value = await fetchMangas()
-  isLoading.value = false
-}
-
-onMounted(() => {
-  loadMangas()
 })
 
 const featuredList = computed(() => {

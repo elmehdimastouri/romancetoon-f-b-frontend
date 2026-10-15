@@ -1,7 +1,8 @@
 import { defineEventHandler, setHeader } from 'h3'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const SITE_URL = 'https://romancetoon.com'
-const API_BASE_URL = 'https://api.romancetoon.com'
 
 function escapeXml(unsafe: string): string {
   if (!unsafe) return ''
@@ -24,6 +25,16 @@ function slugifyGenre(name: string): string {
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
   setHeader(event, 'Cache-Control', 'public, max-age=3600, s-maxage=14400')
+
+  let API_BASE_URL = 'https://api.romancetoon.com'
+  try {
+    const config = useRuntimeConfig()
+    if (config?.public?.apiBase) {
+      API_BASE_URL = config.public.apiBase
+    }
+  } catch (e) {
+    // fallback
+  }
 
   const nowIso = new Date().toISOString()
   const todayDate = nowIso.split('T')[0]
@@ -52,7 +63,29 @@ export default defineEventHandler(async (event) => {
       mangas = json.data
     }
   } catch (err) {
-    console.warn('[sitemap.xml] Error fetching mangas for sitemap:', err)
+    console.warn('[sitemap.xml] Error fetching mangas for sitemap from API:', err)
+  }
+
+  // Fallback to local database if API unreachable during offline build
+  if (mangas.length === 0) {
+    try {
+      const candidates = [
+        path.resolve(process.cwd(), '../backend/database.json'),
+        path.resolve(process.cwd(), 'backend/database.json')
+      ]
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          const raw = fs.readFileSync(p, 'utf-8')
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed.mangas)) {
+            mangas = parsed.mangas
+            break
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   // Fetch live genres from API
@@ -117,7 +150,7 @@ export default defineEventHandler(async (event) => {
 
     // Chapter pages
     if (Array.isArray(m.chapters)) {
-      const published = m.chapters.filter((c: any) => c.isPublished !== false)
+      const published = m.chapters.filter((c: any) => c.isPublished !== false && c.status !== 'draft')
       published.forEach((c: any) => {
         const chNum = c.number || c.id
         if (chNum !== undefined && chNum !== null) {

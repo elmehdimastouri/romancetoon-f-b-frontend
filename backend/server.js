@@ -16,9 +16,80 @@ app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
 // Admin Credentials & Authentication Configuration
+const isProduction = process.env.NODE_ENV === 'production'
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'elmehdi').toLowerCase().trim()
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET || '123698745.0aZ'
-const AUTH_SECRET = process.env.AUTH_SECRET || 'romancetoon_sec_token_hash_2026_98745'
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET || '').trim()
+let AUTH_SECRET = (process.env.AUTH_SECRET || '').trim()
+
+const KNOWN_INSECURE_VALUES = new Set([
+  '123698745.0az',
+  'romancetoon_sec_token_hash_2026_98745',
+  'admin',
+  'password',
+  '12345678',
+  'secret'
+])
+
+// Validate ADMIN_PASSWORD / ADMIN_SECRET
+if (!ADMIN_PASSWORD || KNOWN_INSECURE_VALUES.has(ADMIN_PASSWORD.toLowerCase()) || ADMIN_PASSWORD.length < 8) {
+  if (isProduction) {
+    console.error('[FATAL SECURITY ERROR] Refusing to start in production: ADMIN_PASSWORD or ADMIN_SECRET is missing, too short (< 8 chars), or using an insecure default.')
+    process.exit(1)
+  } else {
+    console.warn('[SECURITY WARNING] ADMIN_PASSWORD / ADMIN_SECRET is missing or insecure. Please define a strong password in backend/.env')
+  }
+}
+
+// Validate AUTH_SECRET
+if (!AUTH_SECRET || KNOWN_INSECURE_VALUES.has(AUTH_SECRET.toLowerCase()) || AUTH_SECRET.length < 16) {
+  if (isProduction) {
+    console.error('[FATAL SECURITY ERROR] Refusing to start in production: AUTH_SECRET is missing, too short (< 16 chars), or using an insecure default.')
+    process.exit(1)
+  } else {
+    console.warn('[SECURITY WARNING] AUTH_SECRET is not configured or insecure. Deriving a deterministic local development secret.')
+    AUTH_SECRET = ADMIN_PASSWORD
+      ? crypto.createHmac('sha256', ADMIN_PASSWORD).update('romancetoon_dev_auth_secret_seed').digest('hex')
+      : crypto.randomBytes(32).toString('hex')
+  }
+}
+
+// Constant-time string comparison to prevent timing side-channel attacks
+function safeTimingCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  const bufA = Buffer.from(a, 'utf-8')
+  const bufB = Buffer.from(b, 'utf-8')
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
+// Trust local loopback reverse proxy (Hostinger LiteSpeed/Nginx)
+app.set('trust proxy', 'loopback')
+
+// Helper: Safely resolve true client IP across Cloudflare and Hostinger proxy
+function getClientIp(req) {
+  // 1. Cloudflare provides authenticated, client-unforgeable IP in CF-Connecting-IP
+  const cfIp = req.headers['cf-connecting-ip']
+  if (cfIp && typeof cfIp === 'string') {
+    const cleanCfIp = cfIp.trim()
+    if (cleanCfIp) return cleanCfIp
+  }
+
+  // 2. Loopback/local proxy fallback
+  const remoteAddr = req.socket?.remoteAddress || ''
+  const isLoopback = remoteAddr.includes('127.0.0.1') || remoteAddr.includes('::1') || remoteAddr.includes('::ffff:127.0.0.1')
+
+  if (isLoopback) {
+    const xff = req.headers['x-forwarded-for']
+    if (xff && typeof xff === 'string') {
+      const parts = xff.split(',').map(s => s.trim()).filter(Boolean)
+      if (parts.length > 0) {
+        return parts[0]
+      }
+    }
+  }
+
+  return req.ip || remoteAddr || '127.0.0.1'
+}
 
 // In-memory rate limiting map for login attempts (IP -> { attempts, resetTime })
 const loginAttempts = new Map()
@@ -59,12 +130,12 @@ function verifyAdminToken(token) {
   if (!token || typeof token !== 'string') return false
   const parts = token.split('.')
   if (parts.length !== 2) {
-    // fallback: allow raw secret for backward compatibility
-    return token === ADMIN_PASSWORD
+    // fallback: allow raw secret for backward compatibility using timing-safe comparison
+    return Boolean(ADMIN_PASSWORD) && safeTimingCompare(token, ADMIN_PASSWORD)
   }
   const [payloadB64, signature] = parts
   const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(payloadB64).digest('base64url')
-  if (signature !== expectedSignature) return false
+  if (!safeTimingCompare(signature, expectedSignature)) return false
 
   try {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'))
@@ -135,7 +206,7 @@ function getR2Client() {
 // 0. Admin Authentication Endpoints (Login & Session Verification)
 // ---------------------------------------------------------------------------
 app.post('/api/auth/login', (req, res) => {
-  const ip = req.ip || req.connection?.remoteAddress || 'unknown'
+  const ip = getClientIp(req)
 
   if (isRateLimited(ip)) {
     return res.status(429).json({
@@ -156,7 +227,10 @@ app.post('/api/auth/login', (req, res) => {
   const cleanUsername = String(username).toLowerCase().trim()
   const cleanPassword = String(password).trim()
 
-  if (cleanUsername === ADMIN_USERNAME && cleanPassword === ADMIN_PASSWORD) {
+  const isUserValid = cleanUsername === ADMIN_USERNAME
+  const isPassValid = Boolean(ADMIN_PASSWORD) && safeTimingCompare(cleanPassword, ADMIN_PASSWORD)
+
+  if (isUserValid && isPassValid) {
     clearAttempts(ip)
     const token = generateAdminToken(ADMIN_USERNAME)
     return res.json({
@@ -362,6 +436,64 @@ app.get('/api/mangas/:id', async (req, res) => {
   res.json({ success: true, data: manga })
 })
 
+// Helper: Clean Unicode slug generator supporting Latin, Arabic, Korean, Japanese, etc.
+function generateUnicodeSlug(title, fallbackId = '') {
+  if (!title || typeof title !== 'string') {
+    return `manga-${fallbackId || Date.now().toString(36)}`
+  }
+
+  // 1. Convert to lowercase and trim
+  const clean = title.trim().toLowerCase()
+
+  // 2. Replace all characters except Unicode letters (\p{L}) and Unicode numbers (\p{N}) with hyphens
+  let slug = clean.replace(/[^\p{L}\p{N}]+/gu, '-')
+
+  // 3. Remove leading and trailing hyphens
+  slug = slug.replace(/^-+|-+$/g, '')
+
+  // 4. If slug is empty (e.g. title consisted only of symbols, emojis, or spaces)
+  if (!slug) {
+    slug = `manga-${fallbackId || Date.now().toString(36)}`
+  }
+
+  // 5. Enforce safety length (under 200 chars to leave room for unique collision suffixes)
+  return slug.slice(0, 200)
+}
+
+// Helper: Resolve unique slug in MySQL and local memory DB to prevent ER_DUP_ENTRY
+async function resolveUniqueMangaSlug(baseSlug, mangaId, pool, db) {
+  let candidate = baseSlug
+  let counter = 1
+
+  while (true) {
+    let exists = false
+
+    // Check in MySQL
+    if (pool) {
+      try {
+        const [rows] = await pool.query('SELECT id FROM mangas WHERE slug = ? AND id != ? LIMIT 1', [candidate, mangaId])
+        if (rows.length > 0) exists = true
+      } catch (err) {
+        console.error('Error checking slug uniqueness in MySQL:', err)
+      }
+    }
+
+    // Check in fallback local DB
+    if (!exists && db && Array.isArray(db.mangas)) {
+      if (db.mangas.some(m => m.slug === candidate && m.id !== mangaId)) {
+        exists = true
+      }
+    }
+
+    if (!exists) {
+      return candidate
+    }
+
+    counter++
+    candidate = `${baseSlug}-${counter}`.slice(0, 255)
+  }
+}
+
 // Create new manga
 app.post('/api/mangas', requireAdminAuth, async (req, res) => {
   const { 
@@ -375,16 +507,20 @@ app.post('/api/mangas', requireAdminAuth, async (req, res) => {
   }
 
   const id = `manga_${Date.now().toString(16)}`
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const status = getStatus()
+  const pool = status.isMysqlConnected ? getPool() : null
+  const db = loadData()
+
+  const baseSlug = generateUnicodeSlug(title, id)
+  const slug = await resolveUniqueMangaSlug(baseSlug, id, pool, db)
+
   const altList = alternativeTitles ? (Array.isArray(alternativeTitles) ? alternativeTitles : alternativeTitles.split(',').map(s => s.trim())) : []
   const genreList = genres || ['Romance']
   const year = releaseYear || '2026'
   const state = mangaStatus || 'Ongoing'
 
-  const status = getStatus()
-  if (status.isMysqlConnected) {
+  if (pool) {
     try {
-      const pool = getPool()
       await pool.query(
         `INSERT INTO mangas (id, slug, title, alternative_titles, r2_folder_id, cover, banner, synopsis, author, artist, release_year, status, genres, badge)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -402,7 +538,6 @@ app.post('/api/mangas', requireAdminAuth, async (req, res) => {
   }
 
   // Also sync to local database.json
-  const db = loadData()
   const newManga = {
     id, slug, title, alternativeTitles: altList, r2FolderId: r2FolderId || '',
     cover: cover || '', banner: banner || cover || '', synopsis: synopsis || '',
@@ -506,7 +641,7 @@ app.post('/api/mangas/:id/rate', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5' })
   }
 
-  const fingerprint = (userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const fingerprint = (userFingerprint || getClientIp(req) || 'anonymous').toString().slice(0, 128)
   const status = getStatus()
 
   if (status.isMysqlConnected) {
@@ -581,7 +716,7 @@ app.post('/api/mangas/:id/rate', async (req, res) => {
 // Get user rating for manga
 app.get('/api/mangas/:id/rate', async (req, res) => {
   const { id } = req.params
-  const fingerprint = (req.query.userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const fingerprint = (req.query.userFingerprint || getClientIp(req) || 'anonymous').toString().slice(0, 128)
   const status = getStatus()
 
   if (status.isMysqlConnected) {
@@ -710,7 +845,7 @@ app.post('/api/mangas/:id/view', async (req, res) => {
 app.post('/api/mangas/:id/bookmark', async (req, res) => {
   const { id } = req.params
   const { action, userFingerprint } = req.body || {}
-  const fingerprint = (userFingerprint || req.ip || 'anonymous').toString().slice(0, 128)
+  const fingerprint = (userFingerprint || getClientIp(req) || 'anonymous').toString().slice(0, 128)
   const status = getStatus()
 
   if (status.isMysqlConnected) {
@@ -1047,8 +1182,11 @@ app.post('/api/r2/scan-manga', requireAdminAuth, async (req, res) => {
 app.post('/api/r2/publish-chapters', requireAdminAuth, async (req, res) => {
   const { mangaId, chapters } = req.body
 
-  if (!mangaId || !Array.isArray(chapters)) {
-    return res.status(400).json({ success: false, message: 'mangaId and chapters array are required' })
+  if (!mangaId || !Array.isArray(chapters) || chapters.length === 0) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'mangaId and a non-empty chapters array are required.' 
+    })
   }
 
   const status = getStatus()
@@ -1056,20 +1194,43 @@ app.post('/api/r2/publish-chapters', requireAdminAuth, async (req, res) => {
   const db = loadData()
   const manga = (db.mangas || []).find(m => m.id === mangaId)
 
+  // Verify target manga exists
+  if (pool) {
+    try {
+      const [mRows] = await pool.query('SELECT id FROM mangas WHERE id = ?', [mangaId])
+      if (mRows.length === 0) {
+        return res.status(404).json({ success: false, message: `Target manga with id "${mangaId}" does not exist in MySQL.` })
+      }
+    } catch (err) {
+      console.error('MySQL manga check error:', err)
+      return res.status(500).json({ success: false, message: `Database error checking manga: ${err.message}` })
+    }
+  } else if (!manga) {
+    return res.status(404).json({ success: false, message: `Target manga with id "${mangaId}" not found in database.` })
+  }
+
+  const succeededChapters = []
+  const failedChapters = []
   let publishedCount = 0
   let draftCount = 0
 
   for (const ch of chapters) {
-    const chapterNumber = parseInt(ch.chapterNumber, 10)
+    const chapterNumber = Number(ch.chapterNumber)
+    if (isNaN(chapterNumber) || chapterNumber < 0) {
+      failedChapters.push({
+        chapterNumber: ch.chapterNumber,
+        error: 'Invalid chapter number (must be a valid non-negative number)'
+      })
+      continue
+    }
+
     const isPublished = ch.status === 'published'
     const pagesCount = (ch.pages && ch.pages.length) || 0
     const title = ch.title || `Chapter ${chapterNumber}`
     const releaseDate = ch.releaseDate || (isPublished ? 'Today' : 'Scheduled')
 
-    if (isPublished) publishedCount++
-    else draftCount++
-
     // 1. Save to MySQL
+    let mysqlSuccess = true
     if (pool) {
       try {
         await pool.query(
@@ -1082,38 +1243,82 @@ app.post('/api/r2/publish-chapters', requireAdminAuth, async (req, res) => {
           [mangaId, chapterNumber, title, releaseDate, pagesCount, JSON.stringify(ch.pages || []), isPublished, ch.status || 'published']
         )
       } catch (err) {
-        console.error('MySQL publish chapter error:', err)
+        mysqlSuccess = false
+        console.error(`MySQL publish error for manga ${mangaId} ch ${chapterNumber}:`, err)
+        failedChapters.push({
+          chapterNumber,
+          error: err.message || 'Database execution error'
+        })
       }
     }
 
-    // 2. Save to local fallback
-    if (manga) {
-      if (!manga.chapters) manga.chapters = []
-      const existingIdx = manga.chapters.findIndex(c => c.number === chapterNumber)
-      const chData = {
-        id: chapterNumber.toString(),
-        number: chapterNumber,
-        title,
-        releaseDate,
-        views: '1',
-        pagesCount,
-        isPublished,
-        status: ch.status || 'published',
-        pages: ch.pages || []
+    // 2. If saved or in fallback mode, update local memory and success counter
+    if (mysqlSuccess) {
+      if (isPublished) publishedCount++
+      else draftCount++
+
+      succeededChapters.push({
+        chapterNumber,
+        status: ch.status || (isPublished ? 'published' : 'draft'),
+        pagesCount
+      })
+
+      if (manga) {
+        if (!manga.chapters) manga.chapters = []
+        const existingIdx = manga.chapters.findIndex(c => c.number === chapterNumber)
+        const chData = {
+          id: chapterNumber.toString(),
+          number: chapterNumber,
+          title,
+          releaseDate,
+          views: '1',
+          pagesCount,
+          isPublished,
+          status: ch.status || 'published',
+          pages: ch.pages || []
+        }
+        if (existingIdx >= 0) manga.chapters[existingIdx] = chData
+        else manga.chapters.push(chData)
       }
-      if (existingIdx >= 0) manga.chapters[existingIdx] = chData
-      else manga.chapters.push(chData)
     }
   }
 
-  if (manga && manga.chapters) {
+  if (manga && manga.chapters && succeededChapters.length > 0) {
     manga.chapters.sort((a, b) => a.number - b.number)
     saveData(db)
   }
 
-  res.json({
+  // 3. Construct accurate status response
+  if (succeededChapters.length === 0) {
+    // Total failure
+    return res.status(500).json({
+      success: false,
+      message: `Failed to save all ${failedChapters.length} chapters to database. Uploaded files remain intact in Cloudflare R2 and can be retried safely. Details: ${failedChapters.map(f => `Ch.${f.chapterNumber} (${f.error})`).join('; ')}`,
+      summary: { total: chapters.length, succeeded: 0, failed: failedChapters.length },
+      succeededChapters: [],
+      failedChapters
+    })
+  }
+
+  if (failedChapters.length > 0) {
+    // Partial failure (HTTP 207 Multi-Status)
+    return res.status(207).json({
+      success: false,
+      partial: true,
+      message: `Partially saved: ${succeededChapters.length} chapters saved successfully, but ${failedChapters.length} chapters failed. Uploaded files remain safe in R2. Failed chapters: ${failedChapters.map(f => `Ch.${f.chapterNumber}`).join(', ')}`,
+      summary: { total: chapters.length, succeeded: succeededChapters.length, failed: failedChapters.length },
+      succeededChapters,
+      failedChapters
+    })
+  }
+
+  // Complete success
+  return res.json({
     success: true,
-    message: `Processed ${chapters.length} chapters: (${publishedCount} published, ${draftCount} saved as drafts/scheduled)`
+    message: `All ${succeededChapters.length} chapters saved successfully (${publishedCount} published, ${draftCount} saved as drafts).`,
+    summary: { total: chapters.length, succeeded: succeededChapters.length, failed: 0 },
+    succeededChapters,
+    failedChapters: []
   })
 })
 

@@ -10,9 +10,19 @@ export function slugifyGenre(name: string): string {
 }
 
 export function useRomanceApi() {
+  let baseUrl = API_BASE_URL
+  try {
+    const config = useRuntimeConfig()
+    if (config?.public?.apiBase) {
+      baseUrl = config.public.apiBase
+    }
+  } catch (e) {
+    // Fallback if called outside Nuxt app context
+  }
+
   const getApiUrl = (endpoint: string) => {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    return `${API_BASE_URL}${cleanEndpoint}`
+    return `${baseUrl}${cleanEndpoint}`
   }
 
   // Fetch all mangas from live MySQL database

@@ -505,8 +505,12 @@ const { fetchManga, rateManga, fetchMangaRating, recordView } = useRomanceApi()
 const { getHistoryForManga, isBookmarked, toggleBookmark, getUserFingerprint, getUserRating, setUserRating } = useReadingTracker()
 const { SITE_NAME, cleanDescription, getCanonicalUrl, getComicSeriesSchema, getBreadcrumbSchema } = useSeo()
 
-const manga = ref<any>(null)
-const isLoading = ref(true)
+const { data: manga, status } = await useAsyncData(
+  () => `manga-detail-${slug.value}`,
+  () => fetchManga(slug.value),
+  { watch: [slug] }
+)
+const isLoading = computed(() => status.value === 'pending')
 const chapterSearch = ref('')
 
 // Reactive SEO Metadata, OpenGraph & Structured Data
@@ -593,10 +597,6 @@ const userHistory = computed(() => {
 })
 
 onMounted(async () => {
-  isLoading.value = true
-  manga.value = await fetchManga(slug.value)
-  isLoading.value = false
-
   if (manga.value) {
     // 1. Record view count for this title
     recordView(manga.value.id).then((res) => {
@@ -624,6 +624,7 @@ onMounted(async () => {
     }
   }
 })
+
 
 const handleRate = async (star: number) => {
   if (!manga.value || isSubmittingRating.value) return

@@ -59,55 +59,44 @@ const chapterNumber = computed(() => {
 const { fetchChapter, recordView } = useRomanceApi()
 const { recordHistory } = useReadingTracker()
 
-const manga = ref<any>(null)
-const currentChapter = ref<any>(null)
-const isLoading = ref(true)
+const { data: chapterData, status } = await useAsyncData(
+  () => `chapter-${slug.value}-${chapterNumber.value}`,
+  async () => {
+    if (!slug.value || !chapterNumber.value) return null
+    return await fetchChapter(slug.value, chapterNumber.value)
+  },
+  { watch: [slug, chapterNumber] }
+)
 
-const loadChapter = async () => {
-  if (!slug.value || !chapterNumber.value) {
-    isLoading.value = false
-    return
-  }
-  isLoading.value = true
-  try {
-    const data = await fetchChapter(slug.value, chapterNumber.value)
-    if (data && data.chapter) {
-      const mangaData = { ...data.manga }
-      if (!mangaData.cover) {
-        const catalog = useState<any[]>('global_mangas_list', () => []).value
-        const found = catalog.find((m: any) => m && (m.id === mangaData.id || m.slug === mangaData.slug || m.slug === slug.value))
-        if (found && found.cover) {
-          mangaData.cover = found.cover
-        }
-      }
-      manga.value = mangaData
-      currentChapter.value = data.chapter
-      // Automatically record reading progress into local storage history
-      recordHistory(mangaData, data.chapter)
-      // Record view for this chapter & manga
-      recordView(mangaData.id, data.chapter.number)
-      if (process.client) {
-        window.scrollTo({ top: 0, behavior: 'instant' })
-      }
-    } else {
-      manga.value = null
-      currentChapter.value = null
+const manga = computed(() => {
+  const m = chapterData.value?.manga
+  if (m && !m.cover) {
+    const catalog = useState<any[]>('global_mangas_list', () => []).value
+    const found = catalog.find((c: any) => c && (c.id === m.id || c.slug === m.slug || c.slug === slug.value))
+    if (found && found.cover) {
+      m.cover = found.cover
     }
-  } catch (err) {
-    console.error('Error loading chapter:', err)
-    manga.value = null
-    currentChapter.value = null
-  } finally {
-    isLoading.value = false
+  }
+  return m || null
+})
+
+const currentChapter = computed(() => chapterData.value?.chapter || null)
+const isLoading = computed(() => status.value === 'pending')
+
+const trackClientReading = () => {
+  if (process.client && manga.value && currentChapter.value) {
+    recordHistory(manga.value, currentChapter.value)
+    recordView(manga.value.id, currentChapter.value.number)
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }
 }
 
 onMounted(() => {
-  loadChapter()
+  trackClientReading()
 })
 
-watch(() => [route.params.slug, route.params.chapterId], () => {
-  loadChapter()
+watch(() => currentChapter.value, () => {
+  trackClientReading()
 })
 
 useHead(() => {

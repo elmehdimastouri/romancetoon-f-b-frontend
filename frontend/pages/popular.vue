@@ -93,18 +93,12 @@ setPageSeo({
 
 const { fetchMangas } = useRomanceApi()
 
-const mangas = ref<any[]>([])
-const isLoading = ref(true)
-
-const loadData = async () => {
-  isLoading.value = true
-  mangas.value = await fetchMangas()
-  isLoading.value = false
-}
-
-onMounted(() => {
-  loadData()
+const { data: mangasData, status } = await useAsyncData('popular-mangas-list', () => fetchMangas(), {
+  default: () => []
 })
+
+const mangas = computed(() => mangasData.value || [])
+const isLoading = computed(() => status.value === 'pending')
 
 // Helper to parse views string like '1.4M', '140K', '500' to a number
 const parseViews = (views: string | number | undefined): number => {

@@ -125,32 +125,25 @@ const props = defineProps<{
 
 const { fetchMangas, fetchGenres } = useRomanceApi()
 
-const mangas = ref<any[]>([])
-const dbGenres = ref<Array<{ name: string, slug: string }>>([])
-const isLoading = ref(true)
+const { data: pageData, status } = await useAsyncData('genres-page-data', async () => {
+  const [mangasData, genresData] = await Promise.all([
+    fetchMangas(),
+    fetchGenres()
+  ])
+  return {
+    mangas: mangasData || [],
+    dbGenres: genresData || []
+  }
+}, {
+  default: () => ({ mangas: [], dbGenres: [] })
+})
+
+const mangas = computed(() => pageData.value?.mangas || [])
+const dbGenres = computed(() => pageData.value?.dbGenres || [])
+const isLoading = computed(() => status.value === 'pending')
 
 const normalizedCurrentSlug = computed(() => {
   return (props.currentSlug || '').trim().toLowerCase()
-})
-
-const loadData = async () => {
-  isLoading.value = true
-  try {
-    const [mangasData, genresData] = await Promise.all([
-      fetchMangas(),
-      fetchGenres()
-    ])
-    mangas.value = mangasData || []
-    dbGenres.value = genresData || []
-  } catch (err) {
-    console.error('Error loading genres data:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(() => {
-  loadData()
 })
 
 // Unified list of genres with real counts
