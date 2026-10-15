@@ -1,1 +1,0 @@
-import{N as e,u as t,v as n}from"./CDsUmAd3.js";import{t as r}from"./Dwq3eWTX.js";var i=n({__name:`index`,setup(n){return(n,i)=>(e(),t(r))}});export{i as default};

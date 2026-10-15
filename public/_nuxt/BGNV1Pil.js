@@ -1,1 +1,0 @@
-function e(e){if(e==null||e===``)return`0`;if(typeof e==`string`){let t=e.trim();if(/^[0-9]+(\.[0-9]+)?[KM]$/i.test(t))return t.toUpperCase()}let t=typeof e==`number`?e:parseFloat(e.toString());return isNaN(t)?`0`:t>=1e6?(t/1e6).toFixed(1).replace(/\.0$/,``)+`M`:t>=1e3?(t/1e3).toFixed(1).replace(/\.0$/,``)+`K`:t.toLocaleString(`en-US`)}export{e as t};

@@ -1,1 +1,0 @@
-import{nt as e}from"./CU9lAvAi.js";import{N as t,c as n,u as r,v as i}from"./CDsUmAd3.js";import{t as a}from"./Dwq3eWTX.js";var o=i({__name:`[slug]`,setup(i){let o=e(),s=n(()=>{let e=o.params.slug;return Array.isArray(e)?e[0]||``:e||``});return(e,n)=>(t(),r(a,{"current-slug":s.value},null,8,[`current-slug`]))}});export{o as default};
