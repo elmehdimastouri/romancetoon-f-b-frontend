@@ -11,8 +11,44 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 // Middleware
-app.use(cors({ origin: '*' }))
+const allowedOrigins = [
+  'https://romancetoon.com',
+  'https://www.romancetoon.com',
+  'https://api.romancetoon.com',
+  'http://localhost:3000',
+  'http://localhost:5173'
+]
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.romancetoon.com')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Blocked by CORS policy for RomanceToon'))
+    }
+  },
+  credentials: true
+}))
 app.use(express.json({ limit: '10mb' }))
+
+// Admin Authorization Middleware
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.ADMIN_PASSKEY || '123698745.0aZ'
+
+function requireAdminAuth(req, res, next) {
+  const authHeader = req.headers.authorization
+  const token = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : (req.headers['x-admin-key'] || req.query.adminKey)
+
+  if (!token || token !== ADMIN_SECRET) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'Admin authorization passkey is required to perform this action.'
+    })
+  }
+  next()
+}
 
 // Initialize MySQL
 initMySQL().then(connected => {
@@ -55,6 +91,20 @@ function getR2Client() {
 }
 
 // ---------------------------------------------------------------------------
+// 0. Admin Passkey Verification Endpoint
+// ---------------------------------------------------------------------------
+app.post('/api/auth/verify', (req, res) => {
+  const { passkey } = req.body || {}
+  if (!passkey || typeof passkey !== 'string') {
+    return res.status(400).json({ success: false, message: 'Passkey is required.' })
+  }
+  if (passkey.trim() === ADMIN_SECRET) {
+    return res.json({ success: true, message: 'Authenticated successfully.' })
+  }
+  return res.status(401).json({ success: false, message: 'Incorrect passkey. Access denied.' })
+})
+
+// ---------------------------------------------------------------------------
 // 1. Health check & Root info
 // ---------------------------------------------------------------------------
 app.get('/', (req, res) => {
@@ -71,7 +121,7 @@ app.get('/', (req, res) => {
   })
 })
 
-app.get('/api/db-check', async (req, res) => {
+app.get('/api/db-check', requireAdminAuth, async (req, res) => {
   const status = getStatus()
   if (status.isMysqlConnected) {
     try {
@@ -97,7 +147,7 @@ app.get('/api/db-check', async (req, res) => {
 })
 
 // Endpoint to diagnose and test Cloudflare R2 connection
-app.get('/api/r2-check', async (req, res) => {
+app.get('/api/r2-check', requireAdminAuth, async (req, res) => {
   const s3 = getR2Client()
   const r2Bucket = process.env.R2_BUCKET_NAME || 'romancetoon-chapters'
   const r2Account = process.env.R2_ACCOUNT_ID
@@ -223,7 +273,7 @@ app.get('/api/mangas/:id', async (req, res) => {
 })
 
 // Create new manga
-app.post('/api/mangas', async (req, res) => {
+app.post('/api/mangas', requireAdminAuth, async (req, res) => {
   const { 
     title, alternativeTitles, r2FolderId, cover, banner, 
     synopsis, author, artist, releaseYear, status: mangaStatus, 
@@ -278,7 +328,7 @@ app.post('/api/mangas', async (req, res) => {
 })
 
 // Update manga
-app.put('/api/mangas/:id', async (req, res) => {
+app.put('/api/mangas/:id', requireAdminAuth, async (req, res) => {
   const { id } = req.params
   const { 
     title, alternativeTitles, r2FolderId, cover, banner, 
@@ -331,7 +381,7 @@ app.put('/api/mangas/:id', async (req, res) => {
 })
 
 // Delete manga (and its chapters)
-app.delete('/api/mangas/:id', async (req, res) => {
+app.delete('/api/mangas/:id', requireAdminAuth, async (req, res) => {
   const { id } = req.params
   const status = getStatus()
 
@@ -699,7 +749,7 @@ app.get('/api/genres', async (req, res) => {
 })
 
 // Add new genre
-app.post('/api/genres', async (req, res) => {
+app.post('/api/genres', requireAdminAuth, async (req, res) => {
   const { name } = req.body
   if (!name || !name.trim()) {
     return res.status(400).json({ success: false, message: 'Genre name is required' })
@@ -742,7 +792,7 @@ app.post('/api/genres', async (req, res) => {
 })
 
 // Delete genre
-app.delete('/api/genres/:slugOrName', async (req, res) => {
+app.delete('/api/genres/:slugOrName', requireAdminAuth, async (req, res) => {
   const { slugOrName } = req.params
   const slug = slugifyGenreName(slugOrName)
   const status = getStatus()
@@ -772,7 +822,7 @@ app.delete('/api/genres/:slugOrName', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 // Scan R2 bucket for a specific manga folder
-app.post('/api/r2/scan-manga', async (req, res) => {
+app.post('/api/r2/scan-manga', requireAdminAuth, async (req, res) => {
   const { mangaFolder } = req.body
 
   if (!mangaFolder) {
@@ -904,7 +954,7 @@ app.post('/api/r2/scan-manga', async (req, res) => {
 })
 
 // Publish selected chapters from R2 scan result
-app.post('/api/r2/publish-chapters', async (req, res) => {
+app.post('/api/r2/publish-chapters', requireAdminAuth, async (req, res) => {
   const { mangaId, chapters } = req.body
 
   if (!mangaId || !Array.isArray(chapters)) {
@@ -978,7 +1028,7 @@ app.post('/api/r2/publish-chapters', async (req, res) => {
 })
 
 // Toggle single chapter status (publish/unpublish)
-app.patch('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
+app.patch('/api/mangas/:id/chapters/:chapterNumber', requireAdminAuth, async (req, res) => {
   const { id, chapterNumber } = req.params
   const { isPublished, status: chapStatus } = req.body
   const chNum = parseInt(chapterNumber, 10)
@@ -1011,7 +1061,7 @@ app.patch('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
 })
 
 // Delete single chapter
-app.delete('/api/mangas/:id/chapters/:chapterNumber', async (req, res) => {
+app.delete('/api/mangas/:id/chapters/:chapterNumber', requireAdminAuth, async (req, res) => {
   const { id, chapterNumber } = req.params
   const chNum = parseInt(chapterNumber, 10)
 

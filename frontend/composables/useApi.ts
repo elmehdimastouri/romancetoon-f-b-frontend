@@ -60,11 +60,71 @@ export function useRomanceApi() {
     }
   }
 
+  const ADMIN_STORAGE_KEY = 'romancetoon_admin_token'
+
+  const getAdminToken = (): string => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        return sessionStorage.getItem(ADMIN_STORAGE_KEY) || ''
+      }
+    } catch (e) {
+      // ignore
+    }
+    return ''
+  }
+
+  const setAdminToken = (token: string) => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.setItem(ADMIN_STORAGE_KEY, token)
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const clearAdminToken = () => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.removeItem(ADMIN_STORAGE_KEY)
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const getAdminHeaders = () => {
+    const token = getAdminToken()
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+  }
+
+  // Verify passkey securely against backend
+  const verifyPasskey = async (passkey: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await fetch(getApiUrl('/api/auth/verify'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passkey })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setAdminToken(passkey.trim())
+        return { success: true }
+      }
+      return { success: false, message: json.message || 'Incorrect passkey' }
+    } catch (err: any) {
+      return { success: false, message: 'Server connection error: ' + (err.message || 'Network error') }
+    }
+  }
+
   // Create new manga in live MySQL
   const createManga = async (mangaData: any) => {
     const res = await fetch(getApiUrl('/api/mangas'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify(mangaData)
     })
     return await res.json()
@@ -74,7 +134,7 @@ export function useRomanceApi() {
   const updateManga = async (id: string, mangaData: any) => {
     const res = await fetch(getApiUrl(`/api/mangas/${id}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify(mangaData)
     })
     return await res.json()
@@ -83,7 +143,8 @@ export function useRomanceApi() {
   // Delete manga completely from MySQL
   const deleteManga = async (id: string) => {
     const res = await fetch(getApiUrl(`/api/mangas/${id}`), {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAdminHeaders()
     })
     return await res.json()
   }
@@ -92,7 +153,7 @@ export function useRomanceApi() {
   const scanR2 = async (mangaFolder: string) => {
     const res = await fetch(getApiUrl('/api/r2/scan-manga'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify({ mangaFolder })
     })
     return await res.json()
@@ -102,7 +163,7 @@ export function useRomanceApi() {
   const publishChapters = async (mangaId: string, chapters: any[]) => {
     const res = await fetch(getApiUrl('/api/r2/publish-chapters'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify({ mangaId, chapters })
     })
     return await res.json()
@@ -197,7 +258,7 @@ export function useRomanceApi() {
     try {
       const res = await fetch(getApiUrl('/api/genres'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ name })
       })
       return await res.json()
@@ -211,7 +272,8 @@ export function useRomanceApi() {
   const deleteGenre = async (slugOrName: string) => {
     try {
       const res = await fetch(getApiUrl(`/api/genres/${encodeURIComponent(slugOrName)}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       })
       return await res.json()
     } catch (err) {
@@ -223,6 +285,9 @@ export function useRomanceApi() {
   return {
     API_BASE_URL,
     getApiUrl,
+    verifyPasskey,
+    getAdminToken,
+    clearAdminToken,
     fetchMangas,
     fetchManga,
     fetchChapter,

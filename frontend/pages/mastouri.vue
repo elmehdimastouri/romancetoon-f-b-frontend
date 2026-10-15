@@ -60,12 +60,14 @@
         />
         <button 
           type="submit"
-          class="w-full py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-all"
+          :disabled="isAuthenticating || !pinInput.trim()"
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
         >
-          Unlock Publisher Suite
+          <RefreshCw v-if="isAuthenticating" class="w-4 h-4 animate-spin" />
+          <span>{{ isAuthenticating ? 'Verifying...' : 'Unlock Publisher Suite' }}</span>
         </button>
       </form>
-      <p v-if="authError" class="text-xs text-rose-400 font-medium">Incorrect passkey. Please try again.</p>
+      <p v-if="authError" class="text-xs text-rose-400 font-medium">{{ authErrorMessage || 'Incorrect passkey. Please try again.' }}</p>
     </div>
 
     <!-- Main Publisher Suite Dashboard -->
@@ -694,42 +696,46 @@ useHead({
 const { 
   fetchMangas, createManga, updateManga, 
   deleteManga, scanR2, publishChapters,
-  fetchGenres, createGenre, deleteGenre
+  fetchGenres, createGenre, deleteGenre,
+  verifyPasskey, getAdminToken, clearAdminToken
 } = useRomanceApi()
 
 // Authentication Gate
-const AUTH_KEY = 'romancetoon_publisher_auth_v1'
 const isAuthenticated = ref(false)
 const pinInput = ref('')
 const authError = ref(false)
+const isAuthenticating = ref(false)
+const authErrorMessage = ref('')
 
-const authenticate = () => {
-  if (pinInput.value.trim() === '123698745.0aZ') {
-    isAuthenticated.value = true
-    authError.value = false
-    try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        sessionStorage.setItem(AUTH_KEY, 'true')
-      }
-    } catch (e) {
-      // ignore storage errors
+const authenticate = async () => {
+  const pin = pinInput.value.trim()
+  if (!pin) return
+  isAuthenticating.value = true
+  authError.value = false
+  authErrorMessage.value = ''
+
+  try {
+    const res = await verifyPasskey(pin)
+    if (res.success) {
+      isAuthenticated.value = true
+      authError.value = false
+      await loadLiveMangas()
+    } else {
+      authError.value = true
+      authErrorMessage.value = res.message || 'Incorrect passkey. Please try again.'
     }
-    loadLiveMangas()
-  } else {
+  } catch (err: any) {
     authError.value = true
+    authErrorMessage.value = err.message || 'Authentication failed'
+  } finally {
+    isAuthenticating.value = false
   }
 }
 
 const logout = () => {
   isAuthenticated.value = false
   pinInput.value = ''
-  try {
-    if (typeof window !== 'undefined' && window.sessionStorage) {
-      sessionStorage.removeItem(AUTH_KEY)
-    }
-  } catch (e) {
-    // ignore
-  }
+  clearAdminToken()
 }
 
 // Active Tab
@@ -843,18 +849,21 @@ const loadLiveMangas = async () => {
   await loadLiveGenres()
 }
 
-onMounted(() => {
-  // If already authenticated in session
-  try {
-    if (typeof window !== 'undefined' && window.sessionStorage && sessionStorage.getItem(AUTH_KEY) === 'true') {
-      isAuthenticated.value = true
+onMounted(async () => {
+  const token = getAdminToken()
+  if (token) {
+    try {
+      const res = await verifyPasskey(token)
+      if (res.success) {
+        isAuthenticated.value = true
+        await loadLiveMangas()
+      } else {
+        clearAdminToken()
+        isAuthenticated.value = false
+      }
+    } catch (e) {
+      // ignore
     }
-  } catch (e) {
-    // ignore
-  }
-
-  if (isAuthenticated.value) {
-    loadLiveMangas()
   }
 })
 
