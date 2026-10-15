@@ -126,7 +126,7 @@ useHead(() => {
     `Read ${m.title} Chapter ${c.number} online in English with full-color HD pages. Next chapter and all episodes available at RomanceToon.`
   )
   const canonicalUrl = getCanonicalUrl(`/webtoon/${m.slug || m.id}/chapter-${c.number}`)
-  const coverImage = m.cover || 'https://romancetoon.com/favicon.ico'
+  const coverImage = m.cover || 'https://romancetoon.com/icon-512.png'
 
   const breadcrumbs = getBreadcrumbSchema([
     { name: 'Home', path: '/' },

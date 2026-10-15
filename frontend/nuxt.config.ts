@@ -26,13 +26,15 @@ export default defineNuxtConfig({
         { property: 'og:site_name', content: 'RomanceToon' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'en_US' },
-        { property: 'og:image', content: 'https://romancetoon.com/favicon.ico' },
+        { property: 'og:image', content: 'https://romancetoon.com/icon-512.png' },
         // Twitter Global
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@RomanceToon' }
       ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap' }

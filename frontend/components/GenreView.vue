@@ -273,7 +273,7 @@ useHead(() => {
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
       { property: 'og:url', content: canonical },
-      { property: 'og:image', content: 'https://romancetoon.com/favicon.ico' },
+      { property: 'og:image', content: 'https://romancetoon.com/icon-512.png' },
       { property: 'og:locale', content: 'en_US' },
       // Twitter Card
       { name: 'twitter:card', content: 'summary_large_image' },

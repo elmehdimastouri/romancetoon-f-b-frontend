@@ -1,6 +1,6 @@
 export const SITE_URL = 'https://romancetoon.com'
 export const SITE_NAME = 'RomanceToon'
-export const DEFAULT_OG_IMAGE = 'https://romancetoon.com/favicon.ico'
+export const DEFAULT_OG_IMAGE = 'https://romancetoon.com/icon-512.png'
 export const DEFAULT_DESCRIPTION = 'Read captivating romance webtoons, romantic manhwa, sweet love stories, villainess, and historical fantasy manga online in high-definition on RomanceToon.'
 
 export interface SeoOptions {
@@ -151,7 +151,7 @@ export function useSeo() {
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/favicon.ico`,
+    logo: `${SITE_URL}/icon-512.png`,
     sameAs: []
   })
 
@@ -202,7 +202,7 @@ export function useSeo() {
         '@type': 'Organization',
         name: SITE_NAME,
         url: SITE_URL,
-        logo: `${SITE_URL}/favicon.ico`
+        logo: `${SITE_URL}/icon-512.png`
       },
       datePublished: manga.releaseYear ? `${manga.releaseYear}-01-01` : undefined,
       aggregateRating: manga.rating ? {

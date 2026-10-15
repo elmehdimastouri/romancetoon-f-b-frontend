@@ -524,7 +524,7 @@ useHead(() => {
     `${m.title}: ${m.synopsis || ''}. Read all latest chapters of ${m.title} online in English with high definition quality on RomanceToon.`
   )
   const canonicalUrl = getCanonicalUrl(`/webtoon/${m.slug || m.id}`)
-  const coverImage = m.cover || 'https://romancetoon.com/favicon.ico'
+  const coverImage = m.cover || 'https://romancetoon.com/icon-512.png'
   const genresList = (m.genres || []).join(', ')
 
   const breadcrumbs = getBreadcrumbSchema([
