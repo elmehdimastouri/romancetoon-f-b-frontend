@@ -1,12 +1,17 @@
 import mysql from 'mysql2/promise'
 import dotenv from 'dotenv'
 
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.join(__dirname, '.env') })
 dotenv.config()
 
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'u192061012_romancetoon',
-  password: process.env.DB_PASSWORD || process.env.DB_PASS || '',
+  password: process.env.DB_PASSWORD || process.env.DB_PASS || '123698745.0aZ',
   database: process.env.DB_NAME || 'u192061012_romancetoon',
   waitForConnections: true,
   connectionLimit: 10,

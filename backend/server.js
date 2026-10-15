@@ -11,24 +11,7 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 // Middleware
-const allowedOrigins = [
-  'https://romancetoon.com',
-  'https://www.romancetoon.com',
-  'https://api.romancetoon.com',
-  'http://localhost:3000',
-  'http://localhost:5173'
-]
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.romancetoon.com')) {
-      callback(null, true)
-    } else {
-      callback(new Error('Blocked by CORS policy for RomanceToon'))
-    }
-  },
-  credentials: true
-}))
+app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
 // Admin Authorization Middleware
