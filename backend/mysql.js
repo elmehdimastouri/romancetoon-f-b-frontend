@@ -11,7 +11,7 @@ dotenv.config()
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'u192061012_romancetoon',
-  password: process.env.DB_PASSWORD || process.env.DB_PASS || '',
+  password: process.env.DB_PASSWORD || process.env.DB_PASS || '123698745.0aZ',
   database: process.env.DB_NAME || 'u192061012_romancetoon',
   waitForConnections: true,
   connectionLimit: 10,
@@ -133,11 +133,9 @@ export async function initMySQL() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `)
 
-    // Ensure CEO & Drama and demo manga are deleted from database if present
+    // Ensure CEO & Drama is deleted from genres if present
     try {
       await conn.query("DELETE FROM genres WHERE slug = 'ceo-drama' OR name = 'CEO & Drama'")
-      await conn.query("DELETE FROM mangas WHERE id = 'manga_611ac7d4f93e7'")
-      await conn.query("DELETE FROM chapters WHERE manga_id = 'manga_611ac7d4f93e7'")
     } catch (e) { /* ignore */ }
 
     conn.release()

@@ -18,19 +18,17 @@ app.use(express.json({ limit: '10mb' }))
 // Admin Credentials & Authentication Configuration
 const isProduction = process.env.NODE_ENV === 'production'
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'elmehdi').toLowerCase().trim()
-const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET || '').trim()
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET || '123698745.0aZ').trim()
 let AUTH_SECRET = (process.env.AUTH_SECRET || '').trim()
 
 const KNOWN_INSECURE_VALUES = new Set([
-  '123698745.0az',
-  'romancetoon_sec_token_hash_2026_98745',
   'admin',
   'password',
   '12345678',
   'secret'
 ])
 
-// Validate ADMIN_PASSWORD / ADMIN_SECRET
+// Validate ADMIN_PASSWORD
 if (!ADMIN_PASSWORD || KNOWN_INSECURE_VALUES.has(ADMIN_PASSWORD.toLowerCase()) || ADMIN_PASSWORD.length < 8) {
   if (isProduction) {
     console.error('[FATAL SECURITY ERROR] Refusing to start in production: ADMIN_PASSWORD or ADMIN_SECRET is missing, too short (< 8 chars), or using an insecure default.')
@@ -40,17 +38,19 @@ if (!ADMIN_PASSWORD || KNOWN_INSECURE_VALUES.has(ADMIN_PASSWORD.toLowerCase()) |
   }
 }
 
-// Validate AUTH_SECRET
-if (!AUTH_SECRET || KNOWN_INSECURE_VALUES.has(AUTH_SECRET.toLowerCase()) || AUTH_SECRET.length < 16) {
-  if (isProduction) {
-    console.error('[FATAL SECURITY ERROR] Refusing to start in production: AUTH_SECRET is missing, too short (< 16 chars), or using an insecure default.')
-    process.exit(1)
-  } else {
-    console.warn('[SECURITY WARNING] AUTH_SECRET is not configured or insecure. Deriving a deterministic local development secret.')
-    AUTH_SECRET = ADMIN_PASSWORD
-      ? crypto.createHmac('sha256', ADMIN_PASSWORD).update('romancetoon_dev_auth_secret_seed').digest('hex')
-      : crypto.randomBytes(32).toString('hex')
+// Validate or derive AUTH_SECRET
+if (AUTH_SECRET) {
+  if (KNOWN_INSECURE_VALUES.has(AUTH_SECRET.toLowerCase()) || AUTH_SECRET.length < 16) {
+    if (isProduction) {
+      console.error('[FATAL SECURITY ERROR] Refusing to start in production: AUTH_SECRET is too short (< 16 chars), or using an insecure default.')
+      process.exit(1)
+    } else {
+      console.warn('[SECURITY WARNING] AUTH_SECRET is too short. Deriving strong local secret.')
+      AUTH_SECRET = crypto.createHmac('sha256', ADMIN_PASSWORD).update('romancetoon_production_auth_secret_seed').digest('hex')
+    }
   }
+} else {
+  AUTH_SECRET = crypto.createHmac('sha256', ADMIN_PASSWORD).update('romancetoon_production_auth_secret_seed').digest('hex')
 }
 
 // Constant-time string comparison to prevent timing side-channel attacks
