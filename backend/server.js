@@ -1054,6 +1054,21 @@ app.delete('/api/genres/:slugOrName', requireAdminAuth, async (req, res) => {
     try {
       const pool = getPool()
       await pool.query('DELETE FROM genres WHERE slug = ? OR name = ?', [slug, slugOrName])
+
+      // Clean up the removed genre from any mangas that have it assigned
+      try {
+        const [mRows] = await pool.query('SELECT id, genres FROM mangas')
+        for (const m of mRows) {
+          const parsed = safeJsonParse(m.genres)
+          const filtered = parsed.filter(g => slugifyGenreName(g) !== slug && g.toLowerCase() !== slugOrName.toLowerCase())
+          if (filtered.length !== parsed.length) {
+            await pool.query('UPDATE mangas SET genres = ? WHERE id = ?', [JSON.stringify(filtered), m.id])
+          }
+        }
+      } catch (e) {
+        console.warn('Could not clean up genres from mangas table:', e.message)
+      }
+
       return res.json({ success: true, message: 'Genre removed successfully' })
     } catch (err) {
       console.error('MySQL delete genre error:', err)
@@ -1064,8 +1079,15 @@ app.delete('/api/genres/:slugOrName', requireAdminAuth, async (req, res) => {
   const db = loadData()
   if (db.genres) {
     db.genres = db.genres.filter(g => g.slug !== slug && g.name.toLowerCase() !== slugOrName.toLowerCase())
-    saveData(db)
   }
+  if (Array.isArray(db.mangas)) {
+    for (const m of db.mangas) {
+      if (Array.isArray(m.genres)) {
+        m.genres = m.genres.filter(g => slugifyGenreName(g) !== slug && g.toLowerCase() !== slugOrName.toLowerCase())
+      }
+    }
+  }
+  saveData(db)
 
   res.json({ success: true, message: 'Genre removed successfully' })
 })

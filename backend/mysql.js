@@ -151,6 +151,56 @@ export async function initMySQL() {
       }
     } catch (e) { /* ignore */ }
 
+    try {
+      const [existingMangas] = await conn.query('SELECT COUNT(*) as cnt FROM mangas')
+      if (existingMangas[0]?.cnt === 0) {
+        await conn.query(
+          `INSERT IGNORE INTO mangas (id, slug, title, alternative_titles, r2_folder_id, cover, banner, synopsis, author, artist, release_year, status, genres, rating, rating_count, views, bookmarks, badge)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            'manga_611ac7d4f93e7',
+            'secret-sweetheart-of-the-tycoon',
+            'Secret Sweetheart of the Tycoon',
+            JSON.stringify(['The Billionaire\'s Hidden Rose', 'Tycoon\'s Beloved Contract Wife']),
+            'manga_611ac7d4f93e7',
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1920&q=80',
+            'To save her family from bankruptcy, Seraphina agreed to a one-year marriage of convenience with Damian Thorne, the coldest CEO in the capital. She expected indifference, but discovered deep warmth beneath his icy exterior.',
+            'Clara Delacroix',
+            'Studio Rosebloom',
+            '2026',
+            'Ongoing',
+            JSON.stringify(['Romance', 'CEO & Drama', 'Contract Marriage', 'Contemporary']),
+            4.9,
+            '48.2K',
+            '1.4M',
+            '124K',
+            'HOT'
+          ]
+        )
+        const ch1Pages = [
+          { page: 1, url: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=900&q=85' },
+          { page: 2, url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=900&q=85' },
+          { page: 3, url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=85' },
+          { page: 4, url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85' },
+          { page: 5, url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85' },
+          { page: 6, url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85' }
+        ]
+        await conn.query(
+          `INSERT IGNORE INTO chapters (manga_id, chapter_number, title, release_date, views, pages_count, pages_json, is_published, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ['manga_611ac7d4f93e7', 1, 'Chapter 1: The Midnight Contract', '3 days ago', '142K', 6, JSON.stringify(ch1Pages), 1, 'published']
+        )
+        await conn.query(
+          `INSERT IGNORE INTO chapters (manga_id, chapter_number, title, release_date, views, pages_count, pages_json, is_published, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ['manga_611ac7d4f93e7', 2, 'Chapter 2: His Unspoken Rules', '2 days ago', '118K', 5, '[]', 1, 'published']
+        )
+      }
+    } catch (e) {
+      console.warn('Could not seed default manga:', e.message)
+    }
+
     conn.release()
     return true
   } catch (err) {
