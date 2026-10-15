@@ -5,7 +5,7 @@ const path = require('path')
 
 console.log('[TEST] Phase 1: Authentication Security & Secrets Tests')
 
-const serverPath = path.resolve(__dirname, 'backend', 'server.js')
+const serverPath = path.resolve(__dirname, '..', 'backend', 'server.js')
 
 // Test 1: Production refuses to start if ADMIN_PASSWORD is insecure or missing
 console.log('Test 1: Insecure ADMIN_PASSWORD in production should exit with fatal error')
