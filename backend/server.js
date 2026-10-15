@@ -994,8 +994,7 @@ app.get('/api/genres', async (req, res) => {
     { name: 'Fantasy', slug: 'fantasy' },
     { name: 'Historical', slug: 'historical' },
     { name: 'Contract Marriage', slug: 'contract-marriage' },
-    { name: 'Villainess', slug: 'villainess' },
-    { name: 'CEO & Drama', slug: 'ceo-drama' }
+    { name: 'Villainess', slug: 'villainess' }
   ]
 
   res.json({ success: true, count: genres.length, data: genres })
@@ -1031,8 +1030,7 @@ app.post('/api/genres', requireAdminAuth, async (req, res) => {
       { name: 'Fantasy', slug: 'fantasy' },
       { name: 'Historical', slug: 'historical' },
       { name: 'Contract Marriage', slug: 'contract-marriage' },
-      { name: 'Villainess', slug: 'villainess' },
-      { name: 'CEO & Drama', slug: 'ceo-drama' }
+      { name: 'Villainess', slug: 'villainess' }
     ]
   }
 

@@ -20,7 +20,7 @@ const DEFAULT_DATA = {
       synopsis: 'To save her family from bankruptcy, Seraphina agreed to a one-year marriage of convenience with Damian Thorne, the coldest CEO in the capital. She expected indifference, but discovered deep warmth beneath his icy exterior.',
       author: 'Clara Delacroix',
       artist: 'Studio Rosebloom',
-      genres: ['Romance', 'CEO & Drama', 'Contract Marriage', 'Contemporary'],
+      genres: ['Romance', 'Contract Marriage', 'Contemporary'],
       rating: 4.9,
       ratingCount: '48.2K',
       status: 'Ongoing',
