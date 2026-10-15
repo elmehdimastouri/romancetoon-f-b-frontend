@@ -1,0 +1,9 @@
+# RomanceToon - Robots Configuration
+User-agent: *
+Allow: /
+Disallow: /mastouri
+Disallow: /api/
+
+# Sitemaps
+Host: https://romancetoon.com
+Sitemap: https://romancetoon.com/sitemap.xml

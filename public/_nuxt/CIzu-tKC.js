@@ -1,0 +1,1 @@
+import{L as e,N as t,f as n}from"./CDsUmAd3.js";import{t as r}from"./BDNMzG2s.js";var i={},a={class:`min-h-screen bg-night-950 text-night-100 font-sans`};function o(r,i){return t(),n(`div`,a,[e(r.$slots,`default`)])}var s=r(i,[[`render`,o]]);export{s as default};
