@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import crypto from 'crypto'
 import { loadData, saveData } from './database.js'
 import { initMySQL, getPool, getStatus } from './mysql.js'
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3'
@@ -14,8 +15,65 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
-// Admin Authorization Middleware
-const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.ADMIN_PASSKEY || '123698745.0aZ'
+// Admin Credentials & Authentication Configuration
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'elmehdi').toLowerCase().trim()
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET || '123698745.0aZ'
+const AUTH_SECRET = process.env.AUTH_SECRET || 'romancetoon_sec_token_hash_2026_98745'
+
+// In-memory rate limiting map for login attempts (IP -> { attempts, resetTime })
+const loginAttempts = new Map()
+
+function isRateLimited(ip) {
+  const record = loginAttempts.get(ip)
+  if (!record) return false
+  if (Date.now() > record.resetTime) {
+    loginAttempts.delete(ip)
+    return false
+  }
+  return record.attempts >= 5
+}
+
+function recordFailedAttempt(ip) {
+  const record = loginAttempts.get(ip) || { attempts: 0, resetTime: Date.now() + 15 * 60 * 1000 }
+  record.attempts += 1
+  loginAttempts.set(ip, record)
+}
+
+function clearAttempts(ip) {
+  loginAttempts.delete(ip)
+}
+
+// Generate signed session token (Valid for 7 days)
+function generateAdminToken(username) {
+  const payload = {
+    user: username,
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  }
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url')
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payloadB64).digest('base64url')
+  return `${payloadB64}.${signature}`
+}
+
+// Verify signed session token
+function verifyAdminToken(token) {
+  if (!token || typeof token !== 'string') return false
+  const parts = token.split('.')
+  if (parts.length !== 2) {
+    // fallback: allow raw secret for backward compatibility
+    return token === ADMIN_PASSWORD
+  }
+  const [payloadB64, signature] = parts
+  const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(payloadB64).digest('base64url')
+  if (signature !== expectedSignature) return false
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'))
+    if (!payload.exp || Date.now() > payload.exp) return false
+    return payload.user === ADMIN_USERNAME
+  } catch (err) {
+    return false
+  }
+}
 
 function requireAdminAuth(req, res, next) {
   const authHeader = req.headers.authorization
@@ -23,11 +81,11 @@ function requireAdminAuth(req, res, next) {
     ? authHeader.slice(7).trim()
     : (req.headers['x-admin-key'] || req.query.adminKey)
 
-  if (!token || token !== ADMIN_SECRET) {
+  if (!token || !verifyAdminToken(token)) {
     return res.status(401).json({
       success: false,
       error: 'Unauthorized',
-      message: 'Admin authorization passkey is required to perform this action.'
+      message: 'Valid admin authentication session is required to perform this action.'
     })
   }
   next()
@@ -74,17 +132,66 @@ function getR2Client() {
 }
 
 // ---------------------------------------------------------------------------
-// 0. Admin Passkey Verification Endpoint
+// 0. Admin Authentication Endpoints (Login & Session Verification)
 // ---------------------------------------------------------------------------
+app.post('/api/auth/login', (req, res) => {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown'
+
+  if (isRateLimited(ip)) {
+    return res.status(429).json({
+      success: false,
+      message: 'Too many failed login attempts. Please wait 15 minutes before trying again.'
+    })
+  }
+
+  const { username, password } = req.body || {}
+
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Both username and password are required.'
+    })
+  }
+
+  const cleanUsername = String(username).toLowerCase().trim()
+  const cleanPassword = String(password).trim()
+
+  if (cleanUsername === ADMIN_USERNAME && cleanPassword === ADMIN_PASSWORD) {
+    clearAttempts(ip)
+    const token = generateAdminToken(ADMIN_USERNAME)
+    return res.json({
+      success: true,
+      token,
+      user: ADMIN_USERNAME,
+      message: 'Login successful.'
+    })
+  }
+
+  recordFailedAttempt(ip)
+  return res.status(401).json({
+    success: false,
+    message: 'Invalid username or password.'
+  })
+})
+
 app.post('/api/auth/verify', (req, res) => {
-  const { passkey } = req.body || {}
-  if (!passkey || typeof passkey !== 'string') {
-    return res.status(400).json({ success: false, message: 'Passkey is required.' })
+  const authHeader = req.headers.authorization
+  const token = (authHeader && authHeader.startsWith('Bearer '))
+    ? authHeader.slice(7).trim()
+    : (req.body?.token || req.body?.passkey)
+
+  if (token && verifyAdminToken(token)) {
+    return res.json({
+      success: true,
+      user: ADMIN_USERNAME,
+      message: 'Session verified.'
+    })
   }
-  if (passkey.trim() === ADMIN_SECRET) {
-    return res.json({ success: true, message: 'Authenticated successfully.' })
-  }
-  return res.status(401).json({ success: false, message: 'Incorrect passkey. Access denied.' })
+
+  return res.status(401).json({
+    success: false,
+    message: 'Invalid or expired session. Please log in again.'
+  })
 })
 
 // ---------------------------------------------------------------------------

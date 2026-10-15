@@ -61,6 +61,7 @@ export function useRomanceApi() {
   }
 
   const ADMIN_STORAGE_KEY = 'romancetoon_admin_token'
+  const ADMIN_USER_KEY = 'romancetoon_admin_user'
 
   const getAdminToken = (): string => {
     try {
@@ -73,20 +74,35 @@ export function useRomanceApi() {
     return ''
   }
 
-  const setAdminToken = (token: string) => {
+  const setAdminToken = (token: string, username?: string) => {
     try {
       if (typeof window !== 'undefined' && window.sessionStorage) {
         sessionStorage.setItem(ADMIN_STORAGE_KEY, token)
+        if (username) {
+          sessionStorage.setItem(ADMIN_USER_KEY, username)
+        }
       }
     } catch (e) {
       // ignore
     }
   }
 
+  const getAdminUser = (): string => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        return sessionStorage.getItem(ADMIN_USER_KEY) || 'elmehdi'
+      }
+    } catch (e) {
+      // ignore
+    }
+    return 'elmehdi'
+  }
+
   const clearAdminToken = () => {
     try {
       if (typeof window !== 'undefined' && window.sessionStorage) {
         sessionStorage.removeItem(ADMIN_STORAGE_KEY)
+        sessionStorage.removeItem(ADMIN_USER_KEY)
       }
     } catch (e) {
       // ignore
@@ -101,23 +117,52 @@ export function useRomanceApi() {
     }
   }
 
-  // Verify passkey securely against backend
-  const verifyPasskey = async (passkey: string): Promise<{ success: boolean; message?: string }> => {
+  // Login with username and password against backend
+  const loginAdmin = async (username: string, password: string): Promise<{ success: boolean; token?: string; user?: string; message?: string }> => {
     try {
-      const res = await fetch(getApiUrl('/api/auth/verify'), {
+      const res = await fetch(getApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passkey })
+        body: JSON.stringify({ username, password })
       })
       const json = await res.json()
-      if (json.success) {
-        setAdminToken(passkey.trim())
-        return { success: true }
+      if (json.success && json.token) {
+        setAdminToken(json.token, json.user || username)
+        return { success: true, token: json.token, user: json.user || username }
       }
-      return { success: false, message: json.message || 'Incorrect passkey' }
+      return { success: false, message: json.message || 'Invalid username or password' }
     } catch (err: any) {
       return { success: false, message: 'Server connection error: ' + (err.message || 'Network error') }
     }
+  }
+
+  // Verify existing admin session token against backend
+  const verifyAdminToken = async (existingToken?: string): Promise<{ success: boolean; user?: string; message?: string }> => {
+    const token = existingToken || getAdminToken()
+    if (!token) return { success: false, message: 'No active session' }
+    try {
+      const res = await fetch(getApiUrl('/api/auth/verify'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ token })
+      })
+      const json = await res.json()
+      if (json.success) {
+        return { success: true, user: json.user }
+      }
+      clearAdminToken()
+      return { success: false, message: json.message || 'Session expired' }
+    } catch (err: any) {
+      return { success: false, message: 'Network error verifying session' }
+    }
+  }
+
+  // Backward compatible passkey check
+  const verifyPasskey = async (passkey: string): Promise<{ success: boolean; message?: string }> => {
+    return await verifyAdminToken(passkey)
   }
 
   // Create new manga in live MySQL
@@ -285,8 +330,11 @@ export function useRomanceApi() {
   return {
     API_BASE_URL,
     getApiUrl,
+    loginAdmin,
+    verifyAdminToken,
     verifyPasskey,
     getAdminToken,
+    getAdminUser,
     clearAdminToken,
     fetchMangas,
     fetchManga,

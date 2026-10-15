@@ -20,6 +20,10 @@
       <!-- Action items & Live Site link -->
       <div class="flex items-center space-x-3 text-xs">
         <div v-if="isAuthenticated" class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 flex items-center space-x-2">
+          <UserCheck class="w-3.5 h-3.5 text-emerald-400" />
+          <span class="text-night-300">Admin: <span class="text-white font-semibold font-mono">{{ loggedInUser }}</span></span>
+        </div>
+        <div v-if="isAuthenticated" class="px-3 py-1.5 rounded-xl bg-night-900 border border-night-800 flex items-center space-x-2">
           <BookOpen class="w-4 h-4 text-romance-400" />
           <span class="text-white font-bold">{{ mangas.length }} Live Titles</span>
         </div>
@@ -31,43 +35,85 @@
           v-if="isAuthenticated" 
           @click="logout" 
           class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-colors flex items-center space-x-1.5"
-          title="Lock / Logout"
+          title="Sign Out / Lock"
         >
           <LogOut class="w-3.5 h-3.5" />
-          <span>Lock</span>
+          <span>Sign Out</span>
         </button>
       </div>
     </div>
 
-    <!-- Security Check Gate (Passkey) -->
+    <!-- Security Check Gate (Username & Password) -->
     <div v-if="!isAuthenticated" class="max-w-md mx-auto p-8 rounded-3xl glass-panel text-center space-y-6 shadow-2xl border border-white/10 mt-16">
       <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-romance-600 to-rose-500 flex items-center justify-center mx-auto shadow-glow-pink">
         <Lock class="w-8 h-8 text-white" />
       </div>
       
       <div>
-        <h2 class="font-serif text-xl font-bold text-white">Publisher Access Required</h2>
-        <p class="text-xs text-night-400 mt-1">Please enter your passkey to manage romance titles</p>
+        <h2 class="font-serif text-2xl font-bold text-white">Publisher Suite Sign In</h2>
+        <p class="text-xs text-night-400 mt-1">Enter your admin credentials to access the publisher dashboard</p>
       </div>
 
-      <form @submit.prevent="authenticate" class="space-y-4">
-        <input 
-          v-model="pinInput"
-          type="password" 
-          placeholder="Enter Passkey"
-          class="w-full bg-night-900 border border-night-800 rounded-xl px-4 py-3 text-sm text-center text-white placeholder-night-500 focus:outline-none focus:border-romance-500 transition-colors"
-          autofocus
-        />
+      <form @submit.prevent="authenticate" class="space-y-4 text-left">
+        <!-- Username input -->
+        <div>
+          <label class="block text-xs font-medium text-night-300 mb-1.5">Username</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-night-500">
+              <User class="w-4 h-4" />
+            </div>
+            <input 
+              v-model="usernameInput"
+              type="text" 
+              autocomplete="username"
+              required
+              placeholder="Username"
+              class="w-full bg-night-900 border border-night-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-night-500 focus:outline-none focus:border-romance-500 transition-colors"
+              autofocus
+            />
+          </div>
+        </div>
+
+        <!-- Password input with toggle visibility -->
+        <div>
+          <label class="block text-xs font-medium text-night-300 mb-1.5">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-night-500">
+              <KeyRound class="w-4 h-4" />
+            </div>
+            <input 
+              v-model="passwordInput"
+              :type="showPassword ? 'text' : 'password'" 
+              autocomplete="current-password"
+              required
+              placeholder="Password"
+              class="w-full bg-night-900 border border-night-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-night-500 focus:outline-none focus:border-romance-500 transition-colors"
+            />
+            <button 
+              type="button" 
+              @click="showPassword = !showPassword"
+              class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-night-400 hover:text-night-200 transition-colors"
+              tabindex="-1"
+            >
+              <EyeOff v-if="showPassword" class="w-4 h-4" />
+              <Eye v-else class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
         <button 
           type="submit"
-          :disabled="isAuthenticating || !pinInput.trim()"
-          class="w-full py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+          :disabled="isAuthenticating || !usernameInput.trim() || !passwordInput.trim()"
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-romance-600 to-rose-500 hover:from-romance-500 hover:to-rose-400 text-white font-semibold text-xs shadow-glow-pink transition-all disabled:opacity-50 flex items-center justify-center space-x-2 mt-2"
         >
           <RefreshCw v-if="isAuthenticating" class="w-4 h-4 animate-spin" />
-          <span>{{ isAuthenticating ? 'Verifying...' : 'Unlock Publisher Suite' }}</span>
+          <span>{{ isAuthenticating ? 'Signing In...' : 'Sign In to Publisher Suite' }}</span>
         </button>
       </form>
-      <p v-if="authError" class="text-xs text-rose-400 font-medium">{{ authErrorMessage || 'Incorrect passkey. Please try again.' }}</p>
+
+      <div v-if="authError" class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 font-medium">
+        {{ authErrorMessage || 'Invalid username or password. Please try again.' }}
+      </div>
     </div>
 
     <!-- Main Publisher Suite Dashboard -->
@@ -683,7 +729,7 @@ import { useRomanceApi, slugifyGenre } from '~/composables/useApi'
 import { 
   ShieldCheck, Lock, LogOut, BookOpen, ExternalLink, Sparkles, 
   PlusCircle, Layers, CheckCircle, SearchCode, RefreshCw, 
-  Pencil, Trash2, Tag 
+  Pencil, Trash2, Tag, User, UserCheck, KeyRound, Eye, EyeOff
 } from '@lucide/vue'
 
 useHead({
@@ -697,32 +743,42 @@ const {
   fetchMangas, createManga, updateManga, 
   deleteManga, scanR2, publishChapters,
   fetchGenres, createGenre, deleteGenre,
-  verifyPasskey, getAdminToken, clearAdminToken
+  loginAdmin, verifyAdminToken, getAdminToken, getAdminUser, clearAdminToken
 } = useRomanceApi()
 
 // Authentication Gate
 const isAuthenticated = ref(false)
-const pinInput = ref('')
+const usernameInput = ref('')
+const passwordInput = ref('')
+const showPassword = ref(false)
+const loggedInUser = ref('elmehdi')
 const authError = ref(false)
 const isAuthenticating = ref(false)
 const authErrorMessage = ref('')
 
 const authenticate = async () => {
-  const pin = pinInput.value.trim()
-  if (!pin) return
+  const u = usernameInput.value.trim()
+  const p = passwordInput.value.trim()
+  if (!u || !p) {
+    authError.value = true
+    authErrorMessage.value = 'Please enter both username and password.'
+    return
+  }
   isAuthenticating.value = true
   authError.value = false
   authErrorMessage.value = ''
 
   try {
-    const res = await verifyPasskey(pin)
+    const res = await loginAdmin(u, p)
     if (res.success) {
       isAuthenticated.value = true
       authError.value = false
+      loggedInUser.value = res.user || u
+      passwordInput.value = ''
       await loadLiveMangas()
     } else {
       authError.value = true
-      authErrorMessage.value = res.message || 'Incorrect passkey. Please try again.'
+      authErrorMessage.value = res.message || 'Invalid username or password. Please try again.'
     }
   } catch (err: any) {
     authError.value = true
@@ -734,7 +790,8 @@ const authenticate = async () => {
 
 const logout = () => {
   isAuthenticated.value = false
-  pinInput.value = ''
+  usernameInput.value = ''
+  passwordInput.value = ''
   clearAdminToken()
 }
 
@@ -853,16 +910,18 @@ onMounted(async () => {
   const token = getAdminToken()
   if (token) {
     try {
-      const res = await verifyPasskey(token)
+      const res = await verifyAdminToken(token)
       if (res.success) {
         isAuthenticated.value = true
+        loggedInUser.value = res.user || getAdminUser()
         await loadLiveMangas()
       } else {
         clearAdminToken()
         isAuthenticated.value = false
       }
     } catch (e) {
-      // ignore
+      clearAdminToken()
+      isAuthenticated.value = false
     }
   }
 })
